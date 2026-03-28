@@ -15,7 +15,11 @@ def client(test_faiss_db, tmp_path):
     resources["db"] = test_faiss_db
     resources["runtime_settings_store"] = runtime_store
     resources["reindex_status"] = {"status": "idle", "error": None, "vector_count": 0}
-    resources["scrape_status"] = {"status": "idle", "error": None, "result": None}
+    resources["documents_sync_status"] = {
+        "status": "idle",
+        "error": None,
+        "result": None,
+    }
     resources["news_status"] = {
         "status": "idle",
         "error": None,
@@ -34,7 +38,11 @@ def client(test_faiss_db, tmp_path):
             resources["db"] = test_faiss_db
             resources["runtime_settings_store"] = runtime_store
             resources["reindex_status"] = {"status": "idle", "error": None, "vector_count": 0}
-            resources["scrape_status"] = {"status": "idle", "error": None, "result": None}
+            resources["documents_sync_status"] = {
+                "status": "idle",
+                "error": None,
+                "result": None,
+            }
             resources["news_status"] = {
                 "status": "idle",
                 "error": None,
@@ -67,8 +75,7 @@ def client_no_db(tmp_path):
         mock_settings.retrieval_hybrid = False
         mock_settings.cors_allow_origins = "*"
         mock_settings.raw_data_path = str(tmp_path / "raw")
-        mock_settings.scrape_download_path = str(tmp_path / "raw")
-        mock_settings.scrape_manifest_path = str(tmp_path / "scrape.json")
+        mock_settings.documents_sync_state_path = str(tmp_path / "documents-sync-state.json")
         mock_settings.news_faiss_index_path = str(tmp_path / "news-index")
         mock_settings.news_sync_interval_seconds = 21600
         mock_settings.llm_provider = "openrouter"
@@ -249,6 +256,20 @@ class TestAdminDocumentsEndpoint:
         assert resp.headers["content-type"] == "application/pdf"
         assert "inline" in resp.headers.get("content-disposition", "").lower()
 
+    def test_get_source_file_docx(self, client, tmp_path):
+        upload_dir = tmp_path / "raw"
+        upload_dir.mkdir()
+        target = upload_dir / "demo.docx"
+        target.write_bytes(b"PK\x03\x04 demo")
+        with patch("app.main.settings.raw_data_path", str(upload_dir)):
+            resp = client.get("/files/demo.docx")
+        assert resp.status_code == 200
+        assert (
+            resp.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        assert "inline" in resp.headers.get("content-disposition", "").lower()
+
     def test_get_source_file_not_found(self, client, tmp_path):
         upload_dir = tmp_path / "raw"
         upload_dir.mkdir()
@@ -265,12 +286,21 @@ class TestBackgroundJobs:
         assert resp.json()["status"] == "queued"
         mock_job.assert_called_once()
 
-    def test_trigger_scrape(self, client):
-        with patch("app.main._run_scrape_job") as mock_job:
-            resp = client.post("/admin/scrape")
+    def test_trigger_documents_sync(self, client):
+        with patch("app.main._run_documents_sync_job") as mock_job:
+            resp = client.post("/admin/documents/sync")
         assert resp.status_code == 200
         assert resp.json()["status"] == "queued"
         mock_job.assert_called_once()
+
+    def test_old_scrape_route_removed(self, client):
+        resp = client.post("/admin/scrape")
+        assert resp.status_code == 404
+
+    def test_get_documents_sync_status(self, client):
+        resp = client.get("/admin/documents/sync")
+        assert resp.status_code == 200
+        assert "status" in resp.json()
 
     def test_trigger_news_bootstrap(self, client):
         with patch("app.main._run_news_job") as mock_job:

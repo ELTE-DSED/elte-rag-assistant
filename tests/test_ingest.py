@@ -2,6 +2,7 @@ import json
 
 from app.ingest import (
     _extract_page_from_chunk,
+    _list_ingestion_inputs,
     _load_news_documents,
     _title_from_filename,
 )
@@ -77,3 +78,14 @@ class TestLoadNewsDocuments:
         assert docs[0].metadata["title"] == "Sample News"
         assert docs[0].metadata["source"] == "https://www.inf.elte.hu/en/content/sample-news.t.1000"
         assert "Source URL:" in docs[0].page_content
+
+
+class TestListIngestionInputs:
+    def test_lists_pdf_and_docx_only(self, tmp_path):
+        (tmp_path / "a.pdf").write_bytes(b"%PDF-1.4")
+        (tmp_path / "b.docx").write_bytes(b"PK\x03\x04")
+        (tmp_path / "c.doc").write_bytes(b"\xd0\xcf\x11\xe0")
+        (tmp_path / "d.txt").write_text("ignore", encoding="utf-8")
+
+        paths = _list_ingestion_inputs(tmp_path)
+        assert [path.name for path in paths] == ["a.pdf", "b.docx"]
