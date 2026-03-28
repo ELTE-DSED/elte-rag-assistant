@@ -5,7 +5,7 @@ Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 ## Stack
 - Backend: FastAPI + LangChain + FAISS + BM25 + LLM reranker
 - Frontend: Vite + React + TypeScript + Tailwind (chat + admin)
-- Ingestion: Docling for PDFs and normalized JSON for scraped news
+- Ingestion: Typesense document sync + Docling for PDF/DOCX + normalized JSON for news
 - Deployment: Docker Compose (backend + frontend)
 
 ## Local Development
@@ -33,10 +33,10 @@ docker compose up --build
 
 ## Admin Flow
 1. Upload/delete source PDFs in **Admin → Embeddings and Files**.
-2. Run **Scrape ELTE IK** to fetch new official links/news metadata and normalize news text.
-3. Run **Reindex Vector Store** to rebuild FAISS from PDFs + normalized news.
+2. Run **Documents Sync** to fetch official ELTE document links from Typesense and download `.pdf/.doc/.docx` files.
+3. Run **Reindex Vector Store** to rebuild FAISS from local `.pdf/.docx` files + normalized news.
 
-Scrape and reindex are intentionally separate operations.
+Documents sync and reindex are intentionally separate operations.
 
 ## Citation Note
 Page-level citations depend on chunk metadata captured during ingestion. After ingestion logic changes, run a full reindex to refresh stored metadata.
