@@ -1,5 +1,10 @@
 # ELTE RAG Assistant
 
+[![Tests](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml)
+[![Coverage](https://codecov.io/gh/w04m1/elte-rag-assistant/graph/badge.svg?branch=main)](https://codecov.io/gh/w04m1/elte-rag-assistant)
+[![Tests (dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml)
+[![Coverage (dev)](https://codecov.io/gh/w04m1/elte-rag-assistant/graph/badge.svg?branch=dev)](https://codecov.io/gh/w04m1/elte-rag-assistant)
+
 Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 
 ## Stack
