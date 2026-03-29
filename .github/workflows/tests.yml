@@ -38,3 +38,44 @@ jobs:
       - name: Run frontend tests with coverage
         working-directory: frontend
         run: npm run test:coverage
+
+      - name: Upload backend coverage to Codecov
+        id: codecov_backend
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/backend-coverage.xml
+          flags: backend
+          fail_ci_if_error: true
+
+      - name: Upload frontend coverage to Codecov
+        id: codecov_frontend
+        uses: codecov/codecov-action@v5
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+
+      - name: Upload backend coverage HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-html
+          path: coverage/backend-html
+          if-no-files-found: error
+
+      - name: Upload frontend coverage HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-html
+          path: frontend/coverage
+          if-no-files-found: error
+
+      - name: Coverage summary
+        run: |
+          {
+            echo "## Coverage Reports"
+            echo ""
+            echo "| Component | Coverage file | Codecov upload | HTML artifact |"
+            echo "|---|---|---|---|"
+            echo "| Backend | \`coverage/backend-coverage.xml\` | ${{ steps.codecov_backend.outcome }} | backend-coverage-html |"
+            echo "| Frontend | \`frontend/coverage/lcov.info\` | ${{ steps.codecov_frontend.outcome }} | frontend-coverage-html |"
+          } >> "$GITHUB_STEP_SUMMARY"
