@@ -29,6 +29,20 @@ npm run dev
 
 Frontend uses `VITE_API_BASE_URL` (`frontend/.env.example`).
 
+### Chrome Demo Extension
+```bash
+cd extension
+npm install
+npm run build
+```
+
+Load the unpacked extension from `extension/dist` in Chrome (`chrome://extensions`).
+
+- Injection scope: `https://inf.elte.hu/*` and `http://inf.elte.hu/*`
+- Runtime API URL: configurable in extension options page
+- Default API URL: `http://localhost:8001` (or `EXT_DEFAULT_API_BASE_URL` at build time)
+- For local demo backend CORS can is set to `*` (`CORS_ALLOW_ORIGINS=*`)
+
 ## Docker
 ```bash
 docker compose up --build
