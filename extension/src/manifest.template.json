@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "ELTE RAG Assistant Demo",
+  "version": "0.1.0",
+  "description": "Injected chat assistant for inf.elte.hu.",
+  "permissions": ["storage"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://inf.elte.hu/*", "http://inf.elte.hu/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
