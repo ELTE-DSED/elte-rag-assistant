@@ -47,6 +47,198 @@
         {"role": "assistant", "text": "Yes, there are recent faculty news updates about opportunities. [C1]"}
       ],
       "query": "What about deadlines in those?"
+    },
+    {
+      "id": "thesis_upload_defense_follow_up",
+      "history": [
+        {"role": "user", "text": "How do I upload my thesis?"},
+        {"role": "assistant", "text": "You need to follow the official upload workflow and submission window in Neptun. [C2]"}
+      ],
+      "query": "And after upload, what are the next defense preparation steps?"
+    },
+    {
+      "id": "supervisor_change_follow_up",
+      "history": [
+        {"role": "user", "text": "Can I change my thesis supervisor?"},
+        {"role": "assistant", "text": "Yes, but it requires faculty approval and formal administration. [C3]"}
+      ],
+      "query": "Who approves it at ELTE IK?"
+    },
+    {
+      "id": "thesis_format_follow_up",
+      "history": [
+        {"role": "user", "text": "Are there formatting requirements for the thesis?"},
+        {"role": "assistant", "text": "Yes, thesis formatting and structural requirements are defined in official guidance. [C1]"}
+      ],
+      "query": "Do they also specify language requirements?"
+    },
+    {
+      "id": "internship_docs_follow_up",
+      "history": [
+        {"role": "user", "text": "What documents do I need for internship administration?"},
+        {"role": "assistant", "text": "Typically internship acceptance and completion/reference documents are required. [C2]"}
+      ],
+      "query": "Which one has to be submitted first?"
+    },
+    {
+      "id": "internship_credit_gate_follow_up",
+      "history": [
+        {"role": "user", "text": "Can I start internship in the 3rd semester?"},
+        {"role": "assistant", "text": "Internship timing depends on curriculum constraints and progress requirements. [C1]"}
+      ],
+      "query": "Is there a minimum completed credit threshold before starting?"
+    },
+    {
+      "id": "prerequisite_waiver_follow_up",
+      "history": [
+        {"role": "user", "text": "I am missing one prerequisite. What can I do?"},
+        {"role": "assistant", "text": "You may submit a prerequisite-weakening request through the official process. [C3]"}
+      ],
+      "query": "What deadline applies to that request?"
+    },
+    {
+      "id": "fixed_group_conflict_follow_up",
+      "history": [
+        {"role": "user", "text": "My fixed group classes overlap."},
+        {"role": "assistant", "text": "There is an official process for resolving clashing classes and attendance issues. [C1]"}
+      ],
+      "query": "Where exactly do I submit this request?"
+    },
+    {
+      "id": "exam_period_follow_up",
+      "history": [
+        {"role": "user", "text": "When does the exam period start?"},
+        {"role": "assistant", "text": "Exam period dates are published in semester information materials. [C2]"}
+      ],
+      "query": "And when is the last possible exam date?"
+    },
+    {
+      "id": "final_exam_components_follow_up",
+      "history": [
+        {"role": "user", "text": "How is the final examination structured?"},
+        {"role": "assistant", "text": "The final exam includes defined components and evaluation criteria from the program documents. [C1]"}
+      ],
+      "query": "Are practical components weighted differently than oral parts?"
+    },
+    {
+      "id": "absolutorium_follow_up",
+      "history": [
+        {"role": "user", "text": "What do I need for absolutorium?"},
+        {"role": "assistant", "text": "You must satisfy curriculum and credit requirements defined by the faculty regulations. [C2]"}
+      ],
+      "query": "Does unfinished internship block it?"
+    },
+    {
+      "id": "neptun_registration_follow_up",
+      "history": [
+        {"role": "user", "text": "I cannot register for a subject in Neptun."},
+        {"role": "assistant", "text": "This can happen due to timetable conflicts, missing prerequisites, or registration windows. [C3]"}
+      ],
+      "query": "How can I check which of those is causing my case?"
+    },
+    {
+      "id": "passive_late_follow_up_2",
+      "history": [
+        {"role": "user", "text": "I missed the passive semester request deadline."},
+        {"role": "assistant", "text": "Late requests may require a special justification and a formal exceptional procedure. [C1]"}
+      ],
+      "query": "What supporting documents should I attach?"
+    },
+    {
+      "id": "tuition_eur_follow_up",
+      "history": [
+        {"role": "user", "text": "I need to pay tuition in EUR."},
+        {"role": "assistant", "text": "There is a specific transfer workflow for tuition payments in EUR. [C2]"}
+      ],
+      "query": "Where do I verify the exact recipient account details?"
+    },
+    {
+      "id": "student_card_follow_up",
+      "history": [
+        {"role": "user", "text": "How do I apply for a student card?"},
+        {"role": "assistant", "text": "Student card issuance follows a documented administrative process and required data steps. [C1]"}
+      ],
+      "query": "Can I start classes while the card is still being processed?"
+    },
+    {
+      "id": "taj_insurance_follow_up",
+      "history": [
+        {"role": "user", "text": "I am an international student and I do not have TAJ yet."},
+        {"role": "assistant", "text": "You should follow the official TAJ and health insurance guidance for ELTE students. [C3]"}
+      ],
+      "query": "Which office should I contact first for this?"
+    },
+    {
+      "id": "credit_transfer_follow_up",
+      "history": [
+        {"role": "user", "text": "Can I transfer credits from another university?"},
+        {"role": "assistant", "text": "Yes, through the formal credit transfer procedure with required supporting documentation. [C2]"}
+      ],
+      "query": "Is there a deadline each semester for submitting that?"
+    },
+    {
+      "id": "specialization_track_follow_up",
+      "history": [
+        {"role": "user", "text": "I want to pick a specialization in CS."},
+        {"role": "assistant", "text": "Specialization options and curriculum maps are published in the educational plans. [C1]"}
+      ],
+      "query": "Where can I compare available tracks for the current intake?"
+    },
+    {
+      "id": "admin_contact_follow_up",
+      "history": [
+        {"role": "user", "text": "I have a study administration problem in English."},
+        {"role": "assistant", "text": "You should contact the official student administration channels of the faculty. [C3]"}
+      ],
+      "query": "Is there a specific ELTE IK office email for this?"
+    },
+    {
+      "id": "curriculum_version_follow_up",
+      "history": [
+        {"role": "user", "text": "Which educational plan applies to me?"},
+        {"role": "assistant", "text": "The applicable curriculum depends on your program and admission cohort. [C2]"}
+      ],
+      "query": "How do I confirm my cohort-specific version?"
+    },
+    {
+      "id": "erasmus_deadline_follow_up",
+      "history": [
+        {"role": "user", "text": "I want to apply for Erasmus from IK."},
+        {"role": "assistant", "text": "Application windows and conditions are announced via faculty/international channels. [C1]"}
+      ],
+      "query": "What happens if I submit after the posted deadline?"
+    },
+    {
+      "id": "exceptional_request_status_follow_up",
+      "history": [
+        {"role": "user", "text": "I submitted an exceptional academic request."},
+        {"role": "assistant", "text": "Processing follows the official request workflow and decision timeline. [C2]"}
+      ],
+      "query": "How can I check whether it was approved or still pending?"
+    },
+    {
+      "id": "language_courses_follow_up",
+      "history": [
+        {"role": "user", "text": "Can IK students take foreign language courses?"},
+        {"role": "assistant", "text": "Yes, ELTE offers language course options under specific enrollment rules. [C3]"}
+      ],
+      "query": "Do those credits count into my degree requirements?"
+    },
+    {
+      "id": "pe_requirement_follow_up",
+      "history": [
+        {"role": "user", "text": "Do I need physical education subjects?"},
+        {"role": "assistant", "text": "Physical education requirements are defined by program rules and faculty guidance. [C1]"}
+      ],
+      "query": "Can I get an exemption, and what is the process?"
+    },
+    {
+      "id": "semester_registration_follow_up",
+      "history": [
+        {"role": "user", "text": "I forgot semester registration in Neptun."},
+        {"role": "assistant", "text": "Late registration has specific constraints and may require administrative handling. [C2]"}
+      ],
+      "query": "What are the consequences if I cannot register on time?"
     }
   ]
 }

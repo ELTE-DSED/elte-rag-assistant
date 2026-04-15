@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     embedding_provider: Literal["local", "openrouter"] = "local"
 
     # Local embedding model (hf sentence-transformers)
-    embedding_model_name: str = "all-mpnet-base-v2"
+    embedding_model_name: str = "all-MiniLM-L6-v2"
 
     # OpenRouter embedding model
     openrouter_embedding_model: str = "openai/text-embedding-3-large"
@@ -84,7 +84,6 @@ class Settings(BaseSettings):
     # Runtime profile defaults
     default_embedding_profile: Literal[
         "local_minilm",
-        "local_mpnet",
         "openai_small",
         "openai_large",
     ] = "local_minilm"

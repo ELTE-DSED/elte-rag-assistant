@@ -1,0 +1,1132 @@
+{
+  "version": "2.1",
+  "description": "Manual-reviewed gold set built from solid candidates in gold_candidates_openai_large.json.",
+  "generated_at_utc": "2026-04-06T18:39:26.840721+00:00",
+  "source_artifact": "data\\eval\\gold_candidates_openai_large.json",
+  "selection": {
+    "filter": "manual_verdict == solid",
+    "solid_count": 46,
+    "excluded_not_solid": 31
+  },
+  "counts": {
+    "total": 46,
+    "single_turn": 32,
+    "multi_turn": 14
+  },
+  "items": [
+    {
+      "id": "single-002",
+      "turn_type": "single_turn",
+      "query": "How can I register for elective courses in Neptun?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "registration for subjects BSc_MSc _1_.pdf",
+          "page": 12
+        }
+      ],
+      "required_terms": [
+        "register",
+        "elective",
+        "courses",
+        "neptun"
+      ],
+      "notes": "Accepted from manual review (Registration steps are directly supported by citation.)"
+    },
+    {
+      "id": "single-003",
+      "turn_type": "single_turn",
+      "query": "What are the tuition payment deadlines?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 120
+        },
+        {
+          "source": "Transferring the tuition fee to be paid in EUR.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "tuition",
+        "payment",
+        "deadlines"
+      ],
+      "notes": "Accepted from manual review (Deadlines and payment-status details are supported.)"
+    },
+    {
+      "id": "single-005",
+      "turn_type": "single_turn",
+      "query": "What are the requirements for internship completion?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "The Internship.pdf",
+          "page": 2
+        },
+        {
+          "source": "https://inf.elte.hu/en/application-to-the-innovation-lab-2026",
+          "page": null
+        },
+        {
+          "source": "Kiberbiztons_g 2022 _2024 j_nius_.pdf",
+          "page": 4
+        }
+      ],
+      "required_terms": [
+        "requirements",
+        "internship",
+        "completion"
+      ],
+      "notes": "Accepted from manual review (Internship process variants are supported by cited sources.)"
+    },
+    {
+      "id": "single-006",
+      "turn_type": "single_turn",
+      "query": "What should I do if I fail an exam and need a retake?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Exam period .pdf",
+          "page": 4
+        }
+      ],
+      "required_terms": [
+        "should",
+        "fail",
+        "exam",
+        "need"
+      ],
+      "notes": "Accepted from manual review (Retake policy and fee conditions are supported.)"
+    },
+    {
+      "id": "single-007",
+      "turn_type": "single_turn",
+      "query": "How can I apply for Erasmus opportunities at ELTE IK?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "https://inf.elte.hu/en/node/287751",
+          "page": null
+        }
+      ],
+      "required_terms": [
+        "apply",
+        "erasmus",
+        "opportunities",
+        "elte"
+      ],
+      "notes": "Accepted from manual review (Erasmus deadline/contact and next-step pointers are supported.)"
+    },
+    {
+      "id": "single-009",
+      "turn_type": "single_turn",
+      "query": "What documents are needed for enrollment in the current semester?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "enrolment guide _2_.pdf",
+          "page": 11
+        },
+        {
+          "source": "enrolment guide _2_.pdf",
+          "page": 9
+        },
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 46
+        }
+      ],
+      "required_terms": [
+        "documents",
+        "needed",
+        "enrollment",
+        "current"
+      ],
+      "notes": "Accepted from manual review (Enrollment documents and Neptun activation steps are well-supported.)"
+    },
+    {
+      "id": "single-011",
+      "turn_type": "single_turn",
+      "query": "How are final examination components evaluated?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Conditions for obtaining absolutory.pdf",
+          "page": 36
+        },
+        {
+          "source": "https://inf.elte.hu/en/tdk-conference-it-science-section-2026-spring",
+          "page": null
+        }
+      ],
+      "required_terms": [
+        "final",
+        "examination",
+        "components",
+        "evaluated"
+      ],
+      "notes": "Accepted from manual review (Correctly states insufficient evidence for detailed component evaluation.)"
+    },
+    {
+      "id": "single-013",
+      "turn_type": "single_turn",
+      "query": "What are the curriculum requirements for the BSc in Computer Science at ELTE IK?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "ComputerScience_MSc_curriculum.pdf",
+          "page": 1
+        },
+        {
+          "source": "Programtervez_ informatikus BSc 2018  E szakir_ny 2020m_jus.pdf",
+          "page": 1
+        }
+      ],
+      "required_terms": [
+        "curriculum",
+        "requirements",
+        "bsc",
+        "computer"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; cited context does not provide full BSc curriculum requirements.)"
+    },
+    {
+      "id": "single-014",
+      "turn_type": "single_turn",
+      "query": "How many credits do I need to complete before starting my internship?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Conditions for obtaining absolutory.pdf",
+          "page": 14
+        },
+        {
+          "source": "https://inf.elte.hu/en/application-to-the-innovation-lab-2026",
+          "page": null
+        },
+        {
+          "source": "Kiberbiztons_g 2022 _2024 j_nius_.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "many",
+        "credits",
+        "need",
+        "complete"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; no clear minimum-credit threshold in cited context.)"
+    },
+    {
+      "id": "single-015",
+      "turn_type": "single_turn",
+      "query": "What are the accepted formats and required fields for internship acceptance letters?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "The Internship.pdf",
+          "page": 8
+        }
+      ],
+      "required_terms": [
+        "accepted",
+        "formats",
+        "required",
+        "fields"
+      ],
+      "notes": "Accepted from manual review (Accepted formats and required declaration intent are supported.)"
+    },
+    {
+      "id": "single-017",
+      "turn_type": "single_turn",
+      "query": "What are the prerequisite rules for core programming and algorithm courses?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "2018_Educational_Plan.pdf",
+          "page": 32
+        },
+        {
+          "source": "Weakening the prerequisite_s_.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "prerequisite",
+        "rules",
+        "core",
+        "programming"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; only generic prerequisite info is available.)"
+    },
+    {
+      "id": "single-018",
+      "turn_type": "single_turn",
+      "query": "How can I request prerequisite weakening for a specific subject?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Prerequisite weakening.pdf",
+          "page": 4
+        }
+      ],
+      "required_terms": [
+        "request",
+        "prerequisite",
+        "weakening",
+        "specific"
+      ],
+      "notes": "Accepted from manual review (Prerequisite-weakening process and consequences are well-supported.)"
+    },
+    {
+      "id": "single-019",
+      "turn_type": "single_turn",
+      "query": "How does registration for fixed groups work at ELTE IK?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "The fixed group system.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "registration",
+        "fixed",
+        "groups",
+        "work"
+      ],
+      "notes": "Accepted from manual review (Fixed-group rules are supported by source.)"
+    },
+    {
+      "id": "single-020",
+      "turn_type": "single_turn",
+      "query": "What should I do if two mandatory classes clash in my timetable?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "mandatory attendance at class_ administration of clashing classes_ request for exemption from a  class with a  catalogue.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "should",
+        "two",
+        "mandatory",
+        "classes"
+      ],
+      "notes": "Accepted from manual review (Clash-resolution guidance is directly supported.)"
+    },
+    {
+      "id": "single-022",
+      "turn_type": "single_turn",
+      "query": "How can I submit a uniquely tailored study arrangement request?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Uniquely tailored study arrangement.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "submit",
+        "uniquely",
+        "tailored",
+        "study"
+      ],
+      "notes": "Accepted from manual review (Submission channel, required docs, and deadline are supported.)"
+    },
+    {
+      "id": "single-023",
+      "turn_type": "single_turn",
+      "query": "What are the rules for exam course registration and deregistration deadlines?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 76
+        }
+      ],
+      "required_terms": [
+        "rules",
+        "exam",
+        "course",
+        "registration"
+      ],
+      "notes": "Accepted from manual review (Registration/deregistration deadlines and limits are supported.)"
+    },
+    {
+      "id": "single-024",
+      "turn_type": "single_turn",
+      "query": "How many exam attempts are allowed for a course at ELTE IK?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Exam period .pdf",
+          "page": 4
+        },
+        {
+          "source": "doctoral_regulations_ELTE_20240901.pdf",
+          "page": 164
+        }
+      ],
+      "required_terms": [
+        "many",
+        "exam",
+        "attempts",
+        "allowed"
+      ],
+      "notes": "Accepted from manual review (Core 3-attempt rule is correct and supported.)"
+    },
+    {
+      "id": "single-026",
+      "turn_type": "single_turn",
+      "query": "What is required to obtain absolutorium in the Computer Science BSc?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Conditions for obtaining absolutory.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "required",
+        "obtain",
+        "absolutorium",
+        "computer"
+      ],
+      "notes": "Accepted from manual review (Absolutorium requirements and deadlines are supported.)"
+    },
+    {
+      "id": "single-027",
+      "turn_type": "single_turn",
+      "query": "How are final exam topics selected for Computer Science students?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "2023_Educational-Plan.pdf",
+          "page": 13
+        }
+      ],
+      "required_terms": [
+        "final",
+        "exam",
+        "topics",
+        "selected"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; topic-selection process not in provided context.)"
+    },
+    {
+      "id": "single-028",
+      "turn_type": "single_turn",
+      "query": "What is the difference between thesis consultation and thesis defense?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Conditions for obtaining absolutory.pdf",
+          "page": 4
+        },
+        {
+          "source": "IDI_SzMSz_Regulations.pdf",
+          "page": 6
+        }
+      ],
+      "required_terms": [
+        "difference",
+        "between",
+        "thesis",
+        "consultation"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; direct comparison is not provided in cited text.)"
+    },
+    {
+      "id": "single-029",
+      "turn_type": "single_turn",
+      "query": "How do I choose or change my thesis supervisor at ELTE IK?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "The Thesis.pdf",
+          "page": 3
+        },
+        {
+          "source": "international_web_2019-1.pdf",
+          "page": 72
+        },
+        {
+          "source": "doctoral_regulations_ELTE_2025.pdf",
+          "page": 193
+        }
+      ],
+      "required_terms": [
+        "choose",
+        "change",
+        "thesis",
+        "supervisor"
+      ],
+      "notes": "Accepted from manual review (Main supervisor/topic change workflow is supported.)"
+    },
+    {
+      "id": "single-032",
+      "turn_type": "single_turn",
+      "query": "How does credit transfer work for courses completed at another university?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Credit transfer.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "credit",
+        "transfer",
+        "work",
+        "courses"
+      ],
+      "notes": "Accepted from manual review (Credit-transfer process and limits are supported.)"
+    },
+    {
+      "id": "single-033",
+      "turn_type": "single_turn",
+      "query": "Where can I find information about ELTE IK specialization tracks?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "https://inf.elte.hu/en/node/282532",
+          "page": null
+        },
+        {
+          "source": "Fulfilling the subject requirements.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "find",
+        "information",
+        "elte",
+        "specialization"
+      ],
+      "notes": "Accepted from manual review (Specialization-track list is directly supported.)"
+    },
+    {
+      "id": "single-034",
+      "turn_type": "single_turn",
+      "query": "What should international students do for TAJ and health insurance administration?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "international_web_2019.pdf",
+          "page": 32
+        },
+        {
+          "source": "Social Security number _TAJ_ health insurance.pdf",
+          "page": 1
+        }
+      ],
+      "required_terms": [
+        "should",
+        "international",
+        "students",
+        "taj"
+      ],
+      "notes": "Accepted from manual review (TAJ process for scholarship holders is supported; self-financed caveat is explicit.)"
+    },
+    {
+      "id": "single-035",
+      "turn_type": "single_turn",
+      "query": "How can I request a student card and what is the usual processing time?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Student Card.pdf",
+          "page": 9
+        },
+        {
+          "source": "About the student card prezent_ci_.pdf",
+          "page": 13
+        }
+      ],
+      "required_terms": [
+        "request",
+        "student",
+        "card",
+        "usual"
+      ],
+      "notes": "Accepted from manual review (Request flow and typical processing timeline are supported.)"
+    },
+    {
+      "id": "single-036",
+      "turn_type": "single_turn",
+      "query": "What are the payment options if tuition must be paid in EUR?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Transferring the tuition fee to be paid in EUR.pdf",
+          "page": 4
+        },
+        {
+          "source": "Application for the preliminary programme.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "payment",
+        "options",
+        "tuition",
+        "must"
+      ],
+      "notes": "Accepted from manual review (EUR transfer details are supported by cited doc.)"
+    },
+    {
+      "id": "single-037",
+      "turn_type": "single_turn",
+      "query": "How do I transfer money to the ELTE joint account correctly?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Transferring funds to the joint account.pdf",
+          "page": 1
+        }
+      ],
+      "required_terms": [
+        "transfer",
+        "money",
+        "elte",
+        "joint"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; cited page lacks exact transfer instructions.)"
+    },
+    {
+      "id": "single-040",
+      "turn_type": "single_turn",
+      "query": "How can I access official faculty news relevant to ELTE IK students?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "https://inf.elte.hu/en/node/282532",
+          "page": null
+        },
+        {
+          "source": "international_web_2019.pdf",
+          "page": 36
+        },
+        {
+          "source": "https://inf.elte.hu/en/node/326060",
+          "page": null
+        }
+      ],
+      "required_terms": [
+        "access",
+        "official",
+        "faculty",
+        "news"
+      ],
+      "notes": "Accepted from manual review (Official channels (faculty site + ELTE email/Neptun messages) are supported.)"
+    },
+    {
+      "id": "single-042",
+      "turn_type": "single_turn",
+      "query": "What are the requirements for completing physical education subjects?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "About the general physical education subjects.pdf",
+          "page": 1
+        }
+      ],
+      "required_terms": [
+        "requirements",
+        "completing",
+        "physical",
+        "education"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; cited page is only a topic overview.)"
+    },
+    {
+      "id": "single-043",
+      "turn_type": "single_turn",
+      "query": "How can I enroll in foreign language courses offered through ELTE?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "foreign language courses at elte-1.pdf",
+          "page": 2
+        },
+        {
+          "source": "enrolment guide _2_.pdf",
+          "page": 1
+        },
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 221
+        }
+      ],
+      "required_terms": [
+        "enroll",
+        "foreign",
+        "language",
+        "courses"
+      ],
+      "notes": "Accepted from manual review (Language-course options and relevant enrollment context are supported.)"
+    },
+    {
+      "id": "single-045",
+      "turn_type": "single_turn",
+      "query": "What should I do if I need passivization after the normal deadline?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "Passivization.pdf",
+          "page": 7
+        }
+      ],
+      "required_terms": [
+        "should",
+        "need",
+        "passivization",
+        "normal"
+      ],
+      "notes": "Accepted from manual review (Late passivization (vis major) requirements are supported.)"
+    },
+    {
+      "id": "single-046",
+      "turn_type": "single_turn",
+      "query": "Which rules apply to mandatory internship in the MSc in Computer Science?",
+      "history": [],
+      "expected_evidence": [
+        {
+          "source": "https://inf.elte.hu/en/application-to-the-innovation-lab-2026",
+          "page": null
+        },
+        {
+          "source": "The curriculum-1.pdf",
+          "page": 7
+        }
+      ],
+      "required_terms": [
+        "rules",
+        "apply",
+        "mandatory",
+        "internship"
+      ],
+      "notes": "Accepted from manual review (MSc internship rules and Innovation Lab recognition are supported.)"
+    },
+    {
+      "id": "multi-passive_semester_reference",
+      "turn_type": "multi_turn",
+      "query": "Can I do that after the deadline?",
+      "history": [
+        {
+          "role": "user",
+          "text": "How do I request a passive semester?"
+        },
+        {
+          "role": "assistant",
+          "text": "You need to submit the request through the proper university administration workflow. [C1]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "Passivization.pdf",
+          "page": 7
+        },
+        {
+          "source": "doctoral_regulations_ELTE_01.09.2025.pdf",
+          "page": 119
+        }
+      ],
+      "required_terms": [
+        "deadline"
+      ],
+      "notes": "Accepted from manual review (Post-deadline vis-major passivization guidance is supported.)"
+    },
+    {
+      "id": "multi-exam_retake_follow_up",
+      "turn_type": "multi_turn",
+      "query": "And is there usually a fee?",
+      "history": [
+        {
+          "role": "user",
+          "text": "What are the exam retake rules?"
+        },
+        {
+          "role": "assistant",
+          "text": "Retake options are defined in the academic regulations and depend on the exam policy. [C1]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 122
+        },
+        {
+          "source": "Exam period .pdf",
+          "page": 4
+        }
+      ],
+      "required_terms": [
+        "usually",
+        "fee"
+      ],
+      "notes": "Accepted from manual review (Fee conditions for retakes/no-show are supported.)"
+    },
+    {
+      "id": "multi-erasmus_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Who should I contact first?",
+      "history": [
+        {
+          "role": "user",
+          "text": "How can I apply for Erasmus?"
+        },
+        {
+          "role": "assistant",
+          "text": "Application details are published by the faculty and international office channels. [C3]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "international_web_2019-1.pdf",
+          "page": 69
+        },
+        {
+          "source": "https://inf.elte.hu/en/node/287751",
+          "page": null
+        }
+      ],
+      "required_terms": [
+        "should",
+        "contact",
+        "first"
+      ],
+      "notes": "Accepted from manual review (Contact-first guidance is supported by citations.)"
+    },
+    {
+      "id": "multi-thesis_upload_defense_follow_up",
+      "turn_type": "multi_turn",
+      "query": "And after upload, what are the next defense preparation steps?",
+      "history": [
+        {
+          "role": "user",
+          "text": "How do I upload my thesis?"
+        },
+        {
+          "role": "assistant",
+          "text": "You need to follow the official upload workflow and submission window in Neptun. [C2]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "https://inf.elte.hu/en/tdk-conference-it-science-section-2026-spring",
+          "page": null
+        },
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 85
+        }
+      ],
+      "required_terms": [
+        "upload",
+        "next",
+        "defense",
+        "preparation"
+      ],
+      "notes": "Accepted from manual review (Defense-prep steps are substantially supported.)"
+    },
+    {
+      "id": "multi-internship_docs_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Which one has to be submitted first?",
+      "history": [
+        {
+          "role": "user",
+          "text": "What documents do I need for internship administration?"
+        },
+        {
+          "role": "assistant",
+          "text": "Typically internship acceptance and completion/reference documents are required. [C2]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "The Internship.pdf",
+          "page": 2
+        },
+        {
+          "source": "The Internship.pdf",
+          "page": 10
+        }
+      ],
+      "required_terms": [
+        "one",
+        "has",
+        "submitted",
+        "first"
+      ],
+      "notes": "Accepted from manual review (Correct ordering of internship documents is supported.)"
+    },
+    {
+      "id": "multi-fixed_group_conflict_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Where exactly do I submit this request?",
+      "history": [
+        {
+          "role": "user",
+          "text": "My fixed group classes overlap."
+        },
+        {
+          "role": "assistant",
+          "text": "There is an official process for resolving clashing classes and attendance issues. [C1]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "mandatory attendance at class_ administration of clashing classes_ request for exemption from a  class with a  catalogue.pdf",
+          "page": 1
+        }
+      ],
+      "required_terms": [
+        "exactly",
+        "submit",
+        "request"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; cited context lacks submission-location details.)"
+    },
+    {
+      "id": "multi-final_exam_components_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Are practical components weighted differently than oral parts?",
+      "history": [
+        {
+          "role": "user",
+          "text": "How is the final examination structured?"
+        },
+        {
+          "role": "assistant",
+          "text": "The final exam includes defined components and evaluation criteria from the program documents. [C1]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "Exam period .pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "practical",
+        "components",
+        "weighted",
+        "differently"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; no weighting info in cited source.)"
+    },
+    {
+      "id": "multi-neptun_registration_follow_up",
+      "turn_type": "multi_turn",
+      "query": "How can I check which of those is causing my case?",
+      "history": [
+        {
+          "role": "user",
+          "text": "I cannot register for a subject in Neptun."
+        },
+        {
+          "role": "assistant",
+          "text": "This can happen due to timetable conflicts, missing prerequisites, or registration windows. [C3]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "registration for subjects BSc_MSc _1_.pdf",
+          "page": 5
+        },
+        {
+          "source": "Programme structure planner-1.pdf",
+          "page": 3
+        }
+      ],
+      "required_terms": [
+        "check",
+        "causing",
+        "case"
+      ],
+      "notes": "Accepted from manual review (Practical Neptun checks are supported and on-topic.)"
+    },
+    {
+      "id": "multi-tuition_eur_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Where do I verify the exact recipient account details?",
+      "history": [
+        {
+          "role": "user",
+          "text": "I need to pay tuition in EUR."
+        },
+        {
+          "role": "assistant",
+          "text": "There is a specific transfer workflow for tuition payments in EUR. [C2]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "Transferring funds to the joint account.pdf",
+          "page": 9
+        }
+      ],
+      "required_terms": [
+        "verify",
+        "exact",
+        "recipient",
+        "account"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention based on provided citation content.)"
+    },
+    {
+      "id": "multi-student_card_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Can I start classes while the card is still being processed?",
+      "history": [
+        {
+          "role": "user",
+          "text": "How do I apply for a student card?"
+        },
+        {
+          "role": "assistant",
+          "text": "Student card issuance follows a documented administrative process and required data steps. [C1]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "About the student card prezent_ci_.pdf",
+          "page": 14
+        }
+      ],
+      "required_terms": [
+        "start",
+        "classes",
+        "while",
+        "card"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; cited source does not state class-attendance policy.)"
+    },
+    {
+      "id": "multi-taj_insurance_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Which office should I contact first for this?",
+      "history": [
+        {
+          "role": "user",
+          "text": "I am an international student and I do not have TAJ yet."
+        },
+        {
+          "role": "assistant",
+          "text": "You should follow the official TAJ and health insurance guidance for ELTE students. [C3]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "international_web_2019-1.pdf",
+          "page": 32
+        },
+        {
+          "source": "Social Security number _TAJ_ health insurance.pdf",
+          "page": 4
+        }
+      ],
+      "required_terms": [
+        "office",
+        "should",
+        "contact",
+        "first"
+      ],
+      "notes": "Accepted from manual review (First-contact offices and TAJ client office details are supported.)"
+    },
+    {
+      "id": "multi-curriculum_version_follow_up",
+      "turn_type": "multi_turn",
+      "query": "How do I confirm my cohort-specific version?",
+      "history": [
+        {
+          "role": "user",
+          "text": "Which educational plan applies to me?"
+        },
+        {
+          "role": "assistant",
+          "text": "The applicable curriculum depends on your program and admission cohort. [C2]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "The curriculum-1.pdf",
+          "page": 3
+        },
+        {
+          "source": "Student guide 2025-26 - brochure.pdf",
+          "page": 2
+        }
+      ],
+      "required_terms": [
+        "confirm",
+        "cohort",
+        "specific",
+        "version"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; no cohort-version confirmation procedure in cited context.)"
+    },
+    {
+      "id": "multi-exceptional_request_status_follow_up",
+      "turn_type": "multi_turn",
+      "query": "How can I check whether it was approved or still pending?",
+      "history": [
+        {
+          "role": "user",
+          "text": "I submitted an exceptional academic request."
+        },
+        {
+          "role": "assistant",
+          "text": "Processing follows the official request workflow and decision timeline. [C2]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "ELTE_SZMSZ_II_EN.pdf",
+          "page": 197
+        }
+      ],
+      "required_terms": [
+        "check",
+        "whether",
+        "was",
+        "approved"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; source does not explain status-check method.)"
+    },
+    {
+      "id": "multi-language_courses_follow_up",
+      "turn_type": "multi_turn",
+      "query": "Do those credits count into my degree requirements?",
+      "history": [
+        {
+          "role": "user",
+          "text": "Can IK students take foreign language courses?"
+        },
+        {
+          "role": "assistant",
+          "text": "Yes, ELTE offers language course options under specific enrollment rules. [C3]"
+        }
+      ],
+      "expected_evidence": [
+        {
+          "source": "international_web_2019.pdf",
+          "page": 37
+        }
+      ],
+      "required_terms": [
+        "credits",
+        "count",
+        "degree",
+        "requirements"
+      ],
+      "notes": "Accepted from manual review (Appropriate abstention; no explicit credit-counting rule in cited text.)"
+    }
+  ]
+}

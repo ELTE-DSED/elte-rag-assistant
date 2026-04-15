@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import threading
@@ -112,6 +113,19 @@ def build_rag_prompt(system_prompt: str) -> ChatPromptTemplate:
 
 RAG_PROMPT = build_rag_prompt(DEFAULT_SYSTEM_PROMPT)
 
+RERANK_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a relevance scoring system. Given a query and a list of text "
+            "chunks, score each chunk's relevance to the query on a scale of 0.0 to "
+            "1.0. Return ONLY a JSON array of numbers representing the scores in the "
+            "same order as the chunks. Example: [0.9, 0.3, 0.7]",
+        ),
+        ("human", "Query: {query}\n\nChunks:\n{chunks}"),
+    ]
+)
+
 FOLLOW_UP_REWRITE_PROMPT = ChatPromptTemplate.from_messages(
     [
         (
@@ -178,6 +192,18 @@ def _format_docs(docs: list[Document]) -> str:
 def _extract_sources(docs: list[Document]) -> list[dict[str, Any]]:
     """Build the sources list from retrieved documents."""
     return _build_context_items(docs)
+
+
+def _context_items_with_rank(docs: list[Document]) -> list[dict[str, Any]]:
+    ranked_items: list[dict[str, Any]] = []
+    for index, item in enumerate(_build_context_items(docs), start=1):
+        ranked_items.append(
+            {
+                **item,
+                "rank": index,
+            }
+        )
+    return ranked_items
 
 
 def _normalize_citation_text(value: str) -> str:
@@ -422,6 +448,22 @@ class RAGResult:
     guardrails_triggered: list[str] = field(default_factory=list)
 
 
+@dataclass
+class RetrievalPipelineResult:
+    original_query: str
+    retrieval_query: str
+    rerank_query: str
+    rewrite_applied: bool
+    resolved_pipeline_mode: PipelineMode
+    resolved_reranker_mode: RerankerMode
+    resolved_max_chunks_per_doc: int
+    retrieval_k: int
+    retrieval_fetch_k: int
+    normalized_chat_history: list[dict[str, Any]]
+    docs: list[Document]
+    debug: dict[str, Any] = field(default_factory=dict)
+
+
 def get_llm(model_override: str | None = None):
     """Return a LangChain chat model based on the configured provider."""
     if settings.llm_provider == "openrouter":
@@ -467,9 +509,74 @@ async def _rerank(
             top_k=top_k,
             reranker_model=reranker_model,
         )
+    if reranker_mode == "llm":
+        return await _rerank_llm(
+            query=query,
+            docs=docs,
+            top_k=top_k,
+            reranker_model=reranker_model,
+        )
 
     logger.warning("Unknown reranker mode '%s'; returning documents as-is", reranker_mode)
     return docs[:top_k]
+
+
+async def _rerank_llm(
+    *,
+    query: str,
+    docs: list[Document],
+    top_k: int,
+    reranker_model: str | None = None,
+) -> list[Document]:
+    """Rerank docs using an LLM-based relevance scorer."""
+    if not docs:
+        return docs[:top_k]
+
+    model_name = reranker_model or settings.reranker_model
+    logger.info(
+        "LLM reranking %d documents to top %d using %s",
+        len(docs),
+        top_k,
+        model_name,
+    )
+    reranker_llm = get_llm(model_override=model_name)
+
+    chunks_text = "\n\n".join(
+        f"[Chunk {i + 1}]: {doc.page_content[:500]}" for i, doc in enumerate(docs)
+    )
+
+    try:
+        chain = RERANK_PROMPT | reranker_llm | StrOutputParser()
+        result = str(await chain.ainvoke({"query": query, "chunks": chunks_text})).strip()
+
+        if result.startswith("```"):
+            result = result.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+        parsed_scores = json.loads(result)
+        if not isinstance(parsed_scores, list) or len(parsed_scores) != len(docs):
+            logger.warning(
+                "LLM reranker returned invalid score list (expected %d, got %s); returning as-is",
+                len(docs),
+                len(parsed_scores) if isinstance(parsed_scores, list) else "non-list",
+            )
+            return docs[:top_k]
+
+        scores: list[float] = []
+        for raw in parsed_scores:
+            try:
+                scores.append(float(raw))
+            except (TypeError, ValueError):
+                logger.warning(
+                    "LLM reranker returned non-numeric score '%s'; returning as-is",
+                    raw,
+                )
+                return docs[:top_k]
+
+        scored_docs = sorted(zip(docs, scores), key=lambda x: x[1], reverse=True)
+        return [doc for doc, _score in scored_docs[:top_k]]
+    except Exception as exc:
+        logger.warning("LLM reranking failed (%s), returning documents as-is", exc)
+        return docs[:top_k]
 
 
 def _load_cross_encoder(model_name: str):
@@ -781,31 +888,34 @@ def _extract_carry_over_docs(
     return []
 
 
-async def ask(
+async def run_retrieval_pipeline(
+    *,
     query: str,
     db: FAISS,
     bm25_retriever=None,
     news_db: FAISS | None = None,
-    *,
     chat_history: list[dict[str, Any]] | None = None,
-    system_prompt: str | None = None,
+    llm=None,
     generator_model: str | None = None,
     reranker_model: str | None = None,
     pipeline_mode: PipelineMode | None = None,
     reranker_mode: RerankerMode | None = None,
     max_chunks_per_doc: int | None = None,
-) -> RAGResult:
-    """Run the full RAG pipeline and return a structured result."""
-    k = settings.retrieval_k
-    fetch_k = settings.retrieval_fetch_k
+    retrieval_k: int | None = None,
+    retrieval_fetch_k: int | None = None,
+) -> RetrievalPipelineResult:
+    k = max(1, int(retrieval_k if retrieval_k is not None else settings.retrieval_k))
+    fetch_k = max(
+        k,
+        int(
+            retrieval_fetch_k
+            if retrieval_fetch_k is not None
+            else settings.retrieval_fetch_k
+        ),
+    )
     normalized_chat_history = _normalize_chat_history(chat_history)
-    llm = get_llm(model_override=generator_model)
-    resolved_pipeline_mode: PipelineMode = (
-        pipeline_mode or settings.default_pipeline_mode
-    )
-    resolved_reranker_mode: RerankerMode = (
-        reranker_mode or settings.default_reranker_mode
-    )
+    resolved_pipeline_mode: PipelineMode = pipeline_mode or settings.default_pipeline_mode
+    resolved_reranker_mode: RerankerMode = reranker_mode or settings.default_reranker_mode
     resolved_max_chunks_per_doc = (
         max_chunks_per_doc
         if max_chunks_per_doc is not None
@@ -815,15 +925,21 @@ async def ask(
     rewrite_applied = False
 
     if _is_likely_follow_up(query, normalized_chat_history):
+        rewrite_llm = llm if llm is not None else get_llm(model_override=generator_model)
         rewritten_query = await _rewrite_follow_up_query(
-            query, normalized_chat_history, llm
+            query, normalized_chat_history, rewrite_llm
         )
         if rewritten_query != query:
             rewrite_applied = True
             retrieval_query = rewritten_query
             logger.info("Follow-up rewrite applied for retrieval: %s", retrieval_query)
 
-    # Retrieval from the primary PDF/document store
+    debug: dict[str, Any] = {
+        "stages": {},
+        "counts": {},
+    }
+
+    # Retrieval from primary PDF/document store.
     if settings.retrieval_hybrid and bm25_retriever is not None:
         faiss_retriever = db.as_retriever(
             search_type="mmr",
@@ -832,11 +948,16 @@ async def ask(
         weight = settings.retrieval_hybrid_weight
         faiss_docs = faiss_retriever.invoke(retrieval_query)
         bm25_docs = bm25_retriever.invoke(retrieval_query)
+        debug["stages"]["faiss_candidates"] = _context_items_with_rank(
+            faiss_docs[:fetch_k]
+        )
+        debug["stages"]["bm25_candidates"] = _context_items_with_rank(
+            bm25_docs[:fetch_k]
+        )
         docs: list[Document] = _reciprocal_rank_fusion(
             [faiss_docs, bm25_docs],
             weights=[weight, 1 - weight],
-        )
-        docs = docs[:fetch_k]
+        )[:fetch_k]
     else:
         retriever = db.as_retriever(
             search_type="mmr",
@@ -844,7 +965,9 @@ async def ask(
         )
         docs = retriever.invoke(retrieval_query)
 
-    # Retrieval from the separate news store and fusion with document candidates.
+    debug["stages"]["document_candidates"] = _context_items_with_rank(docs[:fetch_k])
+
+    # Retrieval from news store.
     news_docs: list[Document] = []
     if news_db is not None:
         doc_dim = _faiss_index_dim(db)
@@ -874,6 +997,8 @@ async def ask(
                 logger.exception("Skipping news retrieval due to retriever failure.")
                 news_docs = []
 
+    debug["stages"]["news_candidates"] = _context_items_with_rank(news_docs[:fetch_k])
+
     if news_docs and docs:
         docs = _reciprocal_rank_fusion(
             [docs, news_docs],
@@ -881,22 +1006,29 @@ async def ask(
         )[:fetch_k]
     elif news_docs:
         docs = news_docs[:fetch_k]
+    debug["stages"]["after_news_fusion"] = _context_items_with_rank(docs)
 
     carry_over_docs = _extract_carry_over_docs(normalized_chat_history, max_sources=2)
+    debug["stages"]["carry_over_candidates"] = _context_items_with_rank(
+        carry_over_docs
+    )
+
     if carry_over_docs:
         docs = _dedupe_docs_by_source_page_snippet([*docs, *carry_over_docs])
     else:
         docs = _dedupe_docs_by_source_page_snippet(docs)
+    debug["stages"]["after_dedupe"] = _context_items_with_rank(docs)
 
     if resolved_pipeline_mode == "enhanced_v2":
         docs = _apply_doc_diversity_cap(
             docs,
             max_chunks_per_doc=resolved_max_chunks_per_doc,
         )
+    debug["stages"]["after_diversity"] = _context_items_with_rank(docs)
 
-    # Reranking
+    # Reranking.
     rerank_query = retrieval_query if rewrite_applied else query
-    rerank_model = (
+    resolved_rerank_model = (
         settings.reranker_cross_encoder_model
         if resolved_reranker_mode == "cross_encoder"
         else reranker_model
@@ -905,13 +1037,55 @@ async def ask(
         rerank_query,
         docs,
         top_k=k,
-        reranker_model=rerank_model,
+        reranker_model=resolved_rerank_model,
         reranker_mode=resolved_reranker_mode,
     )
+    debug["stages"]["final_ranked"] = _context_items_with_rank(docs)
+    debug["counts"] = {
+        "document_candidates": len(debug["stages"]["document_candidates"]),
+        "news_candidates": len(debug["stages"]["news_candidates"]),
+        "carry_over_candidates": len(debug["stages"]["carry_over_candidates"]),
+        "final_ranked": len(debug["stages"]["final_ranked"]),
+    }
 
-    # Generation
+    return RetrievalPipelineResult(
+        original_query=query,
+        retrieval_query=retrieval_query,
+        rerank_query=rerank_query,
+        rewrite_applied=rewrite_applied,
+        resolved_pipeline_mode=resolved_pipeline_mode,
+        resolved_reranker_mode=resolved_reranker_mode,
+        resolved_max_chunks_per_doc=resolved_max_chunks_per_doc,
+        retrieval_k=k,
+        retrieval_fetch_k=fetch_k,
+        normalized_chat_history=normalized_chat_history,
+        docs=docs,
+        debug=debug,
+    )
+
+
+async def generate_answer_from_docs(
+    *,
+    query: str,
+    docs: list[Document],
+    chat_history: list[dict[str, Any]] | None = None,
+    normalized_chat_history: list[dict[str, Any]] | None = None,
+    system_prompt: str | None = None,
+    generator_model: str | None = None,
+    pipeline_mode: PipelineMode | None = None,
+    llm=None,
+) -> RAGResult:
+    resolved_pipeline_mode: PipelineMode = pipeline_mode or settings.default_pipeline_mode
+    resolved_chat_history = (
+        normalized_chat_history
+        if normalized_chat_history is not None
+        else _normalize_chat_history(chat_history)
+    )
+    generation_llm = llm if llm is not None else get_llm(model_override=generator_model)
+
     model_name = str(
-        getattr(llm, "model_name", None) or getattr(llm, "model", "unknown")
+        getattr(generation_llm, "model_name", None)
+        or getattr(generation_llm, "model", "unknown")
     )
     context_items = _build_context_items(docs)
     context = _format_docs(docs)
@@ -919,14 +1093,14 @@ async def ask(
     prompt = build_rag_prompt(system_prompt or DEFAULT_SYSTEM_PROMPT)
     citation_map = {item["citation_id"]: item for item in context_items}
 
-    # Try structured output , fall back to plain string
+    # Try structured output, fall back to plain string.
     try:
         import warnings
 
         def _build_structured_llm(method: str):
             if method == "json_schema":
-                return llm.with_structured_output(RAGOutput)
-            return llm.with_structured_output(RAGOutput, method=method)
+                return generation_llm.with_structured_output(RAGOutput)
+            return generation_llm.with_structured_output(RAGOutput, method=method)
 
         async def _invoke_structured(method: str) -> RAGOutput:
             structured_llm = _build_structured_llm(method)
@@ -940,7 +1114,7 @@ async def ask(
                 return await chain.ainvoke(
                     {
                         "chat_history": _format_chat_history_for_prompt(
-                            normalized_chat_history
+                            resolved_chat_history
                         ),
                         "context": context,
                         "question": query,
@@ -992,10 +1166,10 @@ async def ask(
         logger.warning(
             f"Structured output failed ({exc}), falling back to plain string",
         )
-        plain_chain = prompt | llm | StrOutputParser()
+        plain_chain = prompt | generation_llm | StrOutputParser()
         answer: str = await plain_chain.ainvoke(
             {
-                "chat_history": _format_chat_history_for_prompt(normalized_chat_history),
+                "chat_history": _format_chat_history_for_prompt(resolved_chat_history),
                 "context": context,
                 "question": query,
             }
@@ -1019,3 +1193,43 @@ async def ask(
             verification_passed=verification_passed,
             guardrails_triggered=guardrails_triggered,
         )
+
+
+async def ask(
+    query: str,
+    db: FAISS,
+    bm25_retriever=None,
+    news_db: FAISS | None = None,
+    *,
+    chat_history: list[dict[str, Any]] | None = None,
+    system_prompt: str | None = None,
+    generator_model: str | None = None,
+    reranker_model: str | None = None,
+    pipeline_mode: PipelineMode | None = None,
+    reranker_mode: RerankerMode | None = None,
+    max_chunks_per_doc: int | None = None,
+) -> RAGResult:
+    """Run the full RAG pipeline and return a structured result."""
+    llm = get_llm(model_override=generator_model)
+    retrieval = await run_retrieval_pipeline(
+        query=query,
+        db=db,
+        bm25_retriever=bm25_retriever,
+        news_db=news_db,
+        chat_history=chat_history,
+        llm=llm,
+        generator_model=generator_model,
+        reranker_model=reranker_model,
+        pipeline_mode=pipeline_mode,
+        reranker_mode=reranker_mode,
+        max_chunks_per_doc=max_chunks_per_doc,
+    )
+    return await generate_answer_from_docs(
+        query=query,
+        docs=retrieval.docs,
+        normalized_chat_history=retrieval.normalized_chat_history,
+        system_prompt=system_prompt,
+        generator_model=generator_model,
+        pipeline_mode=retrieval.resolved_pipeline_mode,
+        llm=llm,
+    )

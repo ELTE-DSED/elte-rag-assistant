@@ -4,13 +4,12 @@ from typing import Literal
 
 EmbeddingProfile = Literal[
     "local_minilm",
-    "local_mpnet",
     "openai_small",
     "openai_large",
 ]
 
 PipelineMode = Literal["baseline_v1", "enhanced_v2"]
-RerankerMode = Literal["cross_encoder", "off"]
+RerankerMode = Literal["cross_encoder", "off", "llm"]
 
 
 @dataclass(frozen=True)
@@ -23,10 +22,6 @@ EMBEDDING_PROFILE_SPECS: dict[EmbeddingProfile, EmbeddingProfileSpec] = {
     "local_minilm": EmbeddingProfileSpec(
         provider="local",
         model="all-MiniLM-L6-v2",
-    ),
-    "local_mpnet": EmbeddingProfileSpec(
-        provider="local",
-        model="all-mpnet-base-v2",
     ),
     "openai_small": EmbeddingProfileSpec(
         provider="openrouter",

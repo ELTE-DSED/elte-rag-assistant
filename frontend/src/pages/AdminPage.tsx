@@ -40,13 +40,12 @@ const generatorModelPresets = [
 
 const embeddingProfiles: Array<{ value: EmbeddingProfile; label: string }> = [
   { value: "local_minilm", label: "local_minilm (all-MiniLM-L6-v2)" },
-  { value: "local_mpnet", label: "local_mpnet (all-mpnet-base-v2)" },
   { value: "openai_small", label: "openai_small (text-embedding-3-small)" },
   { value: "openai_large", label: "openai_large (text-embedding-3-large)" },
 ];
 
 const pipelineModes: PipelineMode[] = ["baseline_v1", "enhanced_v2"];
-const rerankerModes: RerankerMode[] = ["off", "cross_encoder"];
+const rerankerModes: RerankerMode[] = ["off", "cross_encoder", "llm"];
 
 function presetForModel(model: string, presets: string[]): string {
   return presets.includes(model) ? model : "custom";

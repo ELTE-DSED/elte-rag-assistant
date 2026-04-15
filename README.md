@@ -8,7 +8,7 @@
 Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 
 ## Stack
-- Backend: FastAPI + LangChain + FAISS + BM25 + optional cross-encoder reranker
+- Backend: FastAPI + LangChain + FAISS + BM25 + optional rerankers (`off`, `cross_encoder`, `llm`)
 - Frontend: Vite + React + TypeScript + Tailwind (chat + admin)
 - Ingestion: Typesense document sync + Docling for PDF/DOCX + normalized JSON for news
 - Deployment: Docker Compose (backend + frontend)
@@ -47,6 +47,10 @@ Load the unpacked extension from `extension/dist` in Chrome (`chrome://extension
 ```bash
 docker compose up --build
 ```
+- NVIDIA GPU override (Windows/Linux hosts with NVIDIA container runtime):
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+```
 - Frontend: [http://localhost:5173](http://localhost:5173)
 - Backend API: [http://localhost:8001/docs](http://localhost:8001/docs)
 
@@ -64,7 +68,7 @@ Page-level citations depend on chunk metadata captured during ingestion. After i
 
 ## Index Snapshots
 - Document indexes are now snapshot-based under `data/indexes/<snapshot-id>/`.
-- Active index selection is profile-specific (`local_minilm`, `local_mpnet`, `openai_small`, `openai_large`) and stored in `data/runtime/active_indexes.json`.
+- Active index selection is profile-specific (`local_minilm`, `openai_small`, `openai_large`) and stored in `data/runtime/active_indexes.json`.
 - Reindex creates a new immutable snapshot and updates the active pointer for the selected embedding profile.
 
 ## Usage Analytics
@@ -100,6 +104,19 @@ Staged benchmark matrix (single-turn + multi-turn):
 uv run python scripts/run_benchmarks.py --api-base-url http://127.0.0.1:8001
 ```
 
+Solid-only full matrix benchmark (46 manually accepted gold rows):
+
+```bash
+uv run python scripts/run_benchmarks.py \
+  --api-base-url http://127.0.0.1:8001 \
+  --plan data/eval/benchmark_plan_solid_full_matrix.json \
+  --single-turn data/eval/questions_solid_v2.json \
+  --multi-turn data/eval/multi_turn_questions_solid_v2.json \
+  --gold-set data/eval/gold_set_v2.json \
+  --judge-model "" \
+  --index-pkl data/indexes/<snapshot>__local_minilm__standard__docling_v1/index.pkl
+```
+
 ## Reranker Decision Trail
 On March 29, 2026 (benchmark artifact: `data/eval/benchmarks/benchmark_20260329_141148/benchmark_report.json`), we evaluated three reranker modes in Stage A: `off`, `cross_encoder`, and `llm`.
 
@@ -113,4 +130,29 @@ On March 29, 2026 (benchmark artifact: `data/eval/benchmarks/benchmark_20260329_
   - Multi-turn latency delta: `-1017.15 ms` (faster with `off`)
   - LLM reranker token overhead: `67699` reranker input tokens in the best `llm` run
 
-Conclusion: LLM reranking was tested and retained in benchmark history, but removed from runtime modes because it was redundant for this dataset profile and added latency/token overhead without quality gains.
+Current runtime options keep all three reranker modes (`off`, `cross_encoder`, `llm`) for controlled comparison and benchmarking.
+
+## Solid Gold Benchmark Decision Trail (April 6, 2026)
+Artifact:
+- `data/eval/benchmarks/benchmark_20260406_200454/benchmark_report.json`
+
+Protocol:
+- Gold-only set: `46` rows (`32` single-turn, `14` multi-turn)
+- Full matrix: `3` embeddings × `2` pipelines × `3` rerankers (`18` configs)
+- Deterministic gold scoring only (`--judge-model ""`)
+- Comparability check: `true` (same corpus hash across embeddings)
+
+Best quality configuration in this run:
+- `openai_large + baseline_v1 + off`
+- `grounded_correctness=0.6364`
+- `faithfulness=0.5973`
+- `citation_precision=0.8533`
+
+Fastest configuration in this run:
+- `local_minilm + baseline_v1 + off`
+- single-turn latency `3660.78 ms`
+- multi-turn latency `3527.94 ms`
+
+Gate outcome:
+- `0 / 18` configurations passed all balanced gates.
+- Transport and cost gates passed consistently; primary failures were quality thresholds and latency thresholds.

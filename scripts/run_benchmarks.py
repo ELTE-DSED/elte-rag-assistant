@@ -9,6 +9,20 @@ from typing import Any
 
 import httpx
 
+from app.async_request_runner import (
+    AskRequestItem,
+    AsyncRunnerConfig,
+    RetryPolicy,
+    run_ask_requests,
+)
+from app.evaluation_v2 import (
+    ALL_QUALITY_METRICS,
+    evaluate_gates,
+    load_gold_set,
+    paired_bootstrap_confidence_intervals,
+    rank_gate_pass_runs,
+    score_quality_v2,
+)
 from estimate_embedding_cost import build_estimate
 
 
@@ -70,45 +84,36 @@ def _load_multi_turn_scenarios(path: Path) -> list[dict[str, Any]]:
     return normalized
 
 
-def _post_with_latency(
-    client: httpx.Client,
-    query: str,
-    history: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
-    started = perf_counter()
-    status = "ok"
-    error: str | None = None
-    answer = ""
-    confidence = "unknown"
-    cited_sources: list[dict[str, Any]] = []
-
-    payload: dict[str, Any] = {"query": query}
-    if history:
-        payload["history"] = history
-
-    try:
-        response = client.post("/ask", json=payload)
-        response.raise_for_status()
-        body = response.json()
-        answer = str(body.get("answer", ""))
-        confidence = str(body.get("confidence", "unknown")).strip().lower() or "unknown"
-        raw_sources = body.get("cited_sources")
-        if isinstance(raw_sources, list):
-            cited_sources = [src for src in raw_sources if isinstance(src, dict)]
-    except Exception as exc:
-        status = "error"
-        error = str(exc)
-
-    latency_ms = round((perf_counter() - started) * 1000, 2)
-    return {
-        "status": status,
-        "error": error,
-        "query": query,
-        "latency_ms": latency_ms,
-        "answer_length_chars": len(answer.strip()),
-        "confidence": confidence,
-        "cited_sources_count": len(cited_sources),
-    }
+def _build_request_items(
+    *,
+    single_turn_questions: list[str],
+    multi_turn_scenarios: list[dict[str, Any]],
+) -> list[AskRequestItem]:
+    items: list[AskRequestItem] = []
+    for index, question in enumerate(single_turn_questions, start=1):
+        items.append(
+            AskRequestItem(
+                item_id=f"single-{index:03d}",
+                query=question,
+                history=[],
+                metadata={"dataset": "single_turn", "input_index": index},
+            )
+        )
+    for index, scenario in enumerate(multi_turn_scenarios, start=1):
+        scenario_id = str(scenario.get("id", f"scenario-{index}")).strip()
+        items.append(
+            AskRequestItem(
+                item_id=f"multi-{scenario_id}",
+                query=str(scenario["query"]),
+                history=scenario.get("history", []),
+                metadata={
+                    "dataset": "multi_turn",
+                    "input_index": index,
+                    "scenario_id": scenario_id,
+                },
+            )
+        )
+    return items
 
 
 def _summarize_results(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -124,9 +129,7 @@ def _summarize_results(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if sorted_latencies
         else 0.0
     )
-    score = (
-        ((citation / total) + (non_empty / total)) / 2 if total else 0.0
-    )
+    score = (((citation / total) + (non_empty / total)) / 2) if total else 0.0
     return {
         "total": total,
         "success": success,
@@ -169,6 +172,55 @@ def _has_active_snapshot_for_profile(client: httpx.Client) -> bool:
     return bool(payload.get("from_snapshot"))
 
 
+def _read_active_corpus_hash(client: httpx.Client) -> str | None:
+    try:
+        response = client.get("/admin/indexes/active")
+        response.raise_for_status()
+        payload = response.json()
+    except Exception:
+        return None
+    if not payload.get("from_snapshot"):
+        return None
+    index_path = payload.get("index_path")
+    if not index_path:
+        return None
+    manifest_path = Path(str(index_path)) / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    corpus_hash = manifest.get("corpus_hash")
+    return str(corpus_hash).strip() if corpus_hash else None
+
+
+def _update_comparability(
+    *,
+    comparability: dict[str, Any],
+    embedding_profile: str,
+    corpus_hash: str | None,
+) -> None:
+    observed_hashes: dict[str, str | None] = comparability.setdefault("observed_corpus_hashes", {})
+    observed_hashes[embedding_profile] = corpus_hash
+    if corpus_hash is None:
+        return
+    baseline = comparability.get("baseline_corpus_hash")
+    if baseline is None:
+        comparability["baseline_corpus_hash"] = corpus_hash
+        return
+    if corpus_hash != baseline:
+        comparability["comparable"] = False
+        warning = (
+            "Corpus hash mismatch across embeddings detected: "
+            f"baseline={baseline}, profile={embedding_profile}, observed={corpus_hash}. "
+            "Benchmarks continue, but cross-embedding quality comparisons are marked non-comparable."
+        )
+        warnings = comparability.setdefault("warnings", [])
+        if warning not in warnings:
+            warnings.append(warning)
+
+
 def _trigger_and_wait_reindex(client: httpx.Client, timeout_seconds: int = 3600) -> dict[str, Any]:
     start = perf_counter()
     response = client.post("/admin/reindex")
@@ -206,24 +258,18 @@ def _estimate_run_cost(
         generator_input_tokens_est += query_tokens + (approx_context_chars // 4)
         generator_output_tokens_est += int(row.get("answer_length_chars", 0)) // 4
         if config.reranker_mode == "llm":
-            reranker_input_tokens_est += (
-                retrieval_fetch_k * (500 // 4) + query_tokens
-            )
+            reranker_input_tokens_est += retrieval_fetch_k * (500 // 4) + query_tokens
 
     embedding_usd = 0.0
     embedding_price = EMBEDDING_PRICE_USD_PER_1M.get(config.embedding_profile)
     if embedding_price is not None:
         embedding_usd = (embedding_tokens_one_time / 1_000_000) * embedding_price
 
-    generator_input_usd = (
-        generator_input_tokens_est / 1_000_000 * generator_input_price_per_1m
-    )
-    generator_output_usd = (
-        generator_output_tokens_est / 1_000_000 * generator_output_price_per_1m
-    )
-    reranker_input_usd = (
-        reranker_input_tokens_est / 1_000_000 * reranker_input_price_per_1m
-    )
+    generator_input_usd = generator_input_tokens_est / 1_000_000 * generator_input_price_per_1m
+    generator_output_usd = generator_output_tokens_est / 1_000_000 * generator_output_price_per_1m
+    reranker_input_usd = reranker_input_tokens_est / 1_000_000 * reranker_input_price_per_1m
+    total_estimated_usd = embedding_usd + generator_input_usd + generator_output_usd + reranker_input_usd
+    total_queries = max(1, len(rows))
 
     return {
         "embedding_tokens_one_time": embedding_tokens_one_time,
@@ -234,29 +280,51 @@ def _estimate_run_cost(
         "generator_input_usd": round(generator_input_usd, 6),
         "generator_output_usd": round(generator_output_usd, 6),
         "reranker_input_usd": round(reranker_input_usd, 6),
-        "total_estimated_usd": round(
-            embedding_usd + generator_input_usd + generator_output_usd + reranker_input_usd,
-            6,
-        ),
+        "total_estimated_usd": round(total_estimated_usd, 6),
+        "estimated_usd_per_100_queries": round((total_estimated_usd / total_queries) * 100, 6),
         "estimate_method": "length-based token approximation (chars/4) + configured price table",
     }
 
 
-def _evaluate_config(
+def _evaluate_config_once(
     *,
-    client: httpx.Client,
     config: BenchmarkConfig,
+    api_base_url: str,
     single_turn_questions: list[str],
     multi_turn_scenarios: list[dict[str, Any]],
+    runner_config: AsyncRunnerConfig,
+    gold_set,
+    judge_model: str,
+    bootstrap_samples: int,
+    bootstrap_seed: int,
 ) -> dict[str, Any]:
-    single_rows = [_post_with_latency(client, query=question) for question in single_turn_questions]
+    request_items = _build_request_items(
+        single_turn_questions=single_turn_questions,
+        multi_turn_scenarios=multi_turn_scenarios,
+    )
+    rows, transport = run_ask_requests(
+        api_base_url=api_base_url,
+        requests=request_items,
+        runner_config=runner_config,
+    )
+
+    quality_bundle = score_quality_v2(
+        rows=rows,
+        gold_set=gold_set,
+        judge_model=judge_model,
+        bootstrap_samples=bootstrap_samples,
+        bootstrap_seed=bootstrap_seed,
+        retrieval_k=5,
+    )
+    scored_rows = quality_bundle["rows"]
+    quality_summary = quality_bundle["summary"]
+    confidence_intervals = quality_bundle["confidence_intervals"]
+
+    single_rows = [
+        row for row in scored_rows if str((row.get("metadata") or {}).get("dataset")) != "multi_turn"
+    ]
     multi_rows = [
-        _post_with_latency(
-            client,
-            query=scenario["query"],
-            history=scenario.get("history"),
-        )
-        for scenario in multi_turn_scenarios
+        row for row in scored_rows if str((row.get("metadata") or {}).get("dataset")) == "multi_turn"
     ]
     return {
         "config": asdict(config),
@@ -268,6 +336,9 @@ def _evaluate_config(
             "summary": _summarize_results(multi_rows),
             "rows": multi_rows,
         },
+        "quality_v2": quality_summary,
+        "confidence_intervals": confidence_intervals,
+        "transport": transport,
     }
 
 
@@ -307,6 +378,41 @@ def _build_stage_b_configs(
     return configs
 
 
+def _aggregate_stage_b_quality(
+    repeat_runs: list[dict[str, Any]],
+    *,
+    bootstrap_samples: int,
+    bootstrap_seed: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    metric_lists: dict[str, list[float]] = {metric: [] for metric in ALL_QUALITY_METRICS}
+    primary_rows: list[dict[str, Any]] = []
+    for repeat in repeat_runs:
+        metrics = repeat["quality_v2"]["metrics"]
+        for metric in ALL_QUALITY_METRICS:
+            value = metrics.get(metric)
+            if value is not None:
+                metric_lists[metric].append(float(value))
+        primary_rows.extend(
+            [
+                row["quality_v2"]["primary"]
+                for row in repeat["single_turn"]["rows"] + repeat["multi_turn"]["rows"]
+                if isinstance(row.get("quality_v2", {}).get("primary"), dict)
+            ]
+        )
+
+    averaged_metrics = {
+        metric: (round(sum(values) / len(values), 4) if values else None)
+        for metric, values in metric_lists.items()
+    }
+    confidence_intervals = paired_bootstrap_confidence_intervals(
+        rows=primary_rows,
+        metric_names=ALL_QUALITY_METRICS,
+        samples=max(1, int(bootstrap_samples)),
+        seed=int(bootstrap_seed),
+    )
+    return averaged_metrics, confidence_intervals
+
+
 def run() -> int:
     parser = argparse.ArgumentParser(description="Run staged benchmark matrix for ELTE RAG pipeline.")
     parser.add_argument("--api-base-url", default="http://127.0.0.1:8001")
@@ -319,12 +425,40 @@ def run() -> int:
     parser.add_argument("--generator-input-price-per-1m", type=float, default=0.0)
     parser.add_argument("--generator-output-price-per-1m", type=float, default=0.0)
     parser.add_argument("--reranker-input-price-per-1m", type=float, default=0.0)
+    parser.add_argument("--concurrency", type=int, default=8)
+    parser.add_argument("--max-retries", type=int, default=3)
+    parser.add_argument("--retry-base-delay-ms", type=int, default=300)
+    parser.add_argument("--retry-max-delay-ms", type=int, default=6000)
+    parser.add_argument(
+        "--adaptive-concurrency",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--gold-set", default="data/eval/gold_set_v2.json")
+    parser.add_argument("--judge-model", default="openai/gpt-4.1-mini")
+    parser.add_argument("--gate-preset", default="balanced")
+    parser.add_argument("--bootstrap-samples", type=int, default=2000)
+    parser.add_argument("--bootstrap-seed", type=int, default=31)
     args = parser.parse_args()
 
     plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
     single_turn_questions = _load_single_turn_questions(Path(args.single_turn))
     multi_turn_scenarios = _load_multi_turn_scenarios(Path(args.multi_turn))
     embedding_estimate = build_estimate(Path(args.raw_dir), Path(args.index_pkl))
+    gold_set_path = Path(args.gold_set)
+    gold_set = load_gold_set(gold_set_path) if gold_set_path.exists() else None
+
+    runner_config = AsyncRunnerConfig(
+        timeout_seconds=120.0,
+        concurrency=max(1, int(args.concurrency)),
+        adaptive_concurrency=bool(args.adaptive_concurrency),
+        retry_policy=RetryPolicy(
+            max_retries=max(0, int(args.max_retries)),
+            base_delay_ms=max(1, int(args.retry_base_delay_ms)),
+            max_delay_ms=max(1, int(args.retry_max_delay_ms)),
+        ),
+        random_seed=int(args.bootstrap_seed),
+    )
 
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     run_dir = Path(args.output_dir) / f"benchmark_{timestamp}"
@@ -334,6 +468,13 @@ def run() -> int:
     stage_a_results: list[dict[str, Any]] = []
     stage_b_results: list[dict[str, Any]] = []
     profiles_reindexed: set[str] = set()
+    comparability = {
+        "comparable": True,
+        "policy": "Continue benchmark on corpus-hash mismatch and mark non-comparable.",
+        "baseline_corpus_hash": None,
+        "observed_corpus_hashes": {},
+        "warnings": [],
+    }
 
     with httpx.Client(base_url=args.api_base_url.rstrip("/"), timeout=120.0) as client:
         retrieval_k = 5
@@ -351,12 +492,22 @@ def run() -> int:
                             f"Reindex failed for profile {config.embedding_profile}: {reindex_status}"
                         )
                 profiles_reindexed.add(config.embedding_profile)
+            _update_comparability(
+                comparability=comparability,
+                embedding_profile=config.embedding_profile,
+                corpus_hash=_read_active_corpus_hash(client),
+            )
 
-            run_metrics = _evaluate_config(
-                client=client,
+            run_metrics = _evaluate_config_once(
                 config=config,
+                api_base_url=args.api_base_url,
                 single_turn_questions=single_turn_questions,
                 multi_turn_scenarios=multi_turn_scenarios,
+                runner_config=runner_config,
+                gold_set=gold_set,
+                judge_model=str(args.judge_model),
+                bootstrap_samples=max(1, int(args.bootstrap_samples)),
+                bootstrap_seed=int(args.bootstrap_seed),
             )
             one_time_embedding_tokens = embedding_estimate["missing_embedding_tokens"]["mid"]
             run_metrics["cost"] = _estimate_run_cost(
@@ -370,6 +521,17 @@ def run() -> int:
                 embedding_tokens_one_time=one_time_embedding_tokens,
             )
             run_metrics["family_score"] = _family_score(run_metrics)
+            gate_input_metrics = {
+                **run_metrics["quality_v2"]["metrics"],
+                "single_turn_avg_latency_ms": run_metrics["single_turn"]["summary"]["avg_latency_ms"],
+                "multi_turn_avg_latency_ms": run_metrics["multi_turn"]["summary"]["avg_latency_ms"],
+                "estimated_usd_per_100_queries": run_metrics["cost"]["estimated_usd_per_100_queries"],
+                "transport_success_rate": run_metrics["transport"]["success_rate"],
+            }
+            run_metrics["gates"] = evaluate_gates(
+                metrics=gate_input_metrics,
+                gate_preset_name=str(args.gate_preset),
+            )
             stage_a_results.append(run_metrics)
 
         family_scores: dict[str, float] = {}
@@ -398,14 +560,24 @@ def run() -> int:
                             f"Reindex failed for profile {config.embedding_profile}: {reindex_status}"
                         )
                 profiles_reindexed.add(config.embedding_profile)
+            _update_comparability(
+                comparability=comparability,
+                embedding_profile=config.embedding_profile,
+                corpus_hash=_read_active_corpus_hash(client),
+            )
 
             repeat_runs: list[dict[str, Any]] = []
             for repeat_index in range(stage_b_repeats):
-                repeat_metrics = _evaluate_config(
-                    client=client,
+                repeat_metrics = _evaluate_config_once(
                     config=config,
+                    api_base_url=args.api_base_url,
                     single_turn_questions=single_turn_questions,
                     multi_turn_scenarios=multi_turn_scenarios,
+                    runner_config=runner_config,
+                    gold_set=gold_set,
+                    judge_model=str(args.judge_model),
+                    bootstrap_samples=max(1, int(args.bootstrap_samples)),
+                    bootstrap_seed=int(args.bootstrap_seed),
                 )
                 repeat_metrics["repeat_index"] = repeat_index + 1
                 repeat_runs.append(repeat_metrics)
@@ -416,21 +588,45 @@ def run() -> int:
             avg_multi_latency = sum(
                 r["multi_turn"]["summary"]["avg_latency_ms"] for r in repeat_runs
             ) / len(repeat_runs)
+            averaged_quality_metrics, stage_b_confidence_intervals = _aggregate_stage_b_quality(
+                repeat_runs,
+                bootstrap_samples=max(1, int(args.bootstrap_samples)),
+                bootstrap_seed=int(args.bootstrap_seed),
+            )
+            aggregated_transport = {
+                "total_requests": sum(r["transport"]["total_requests"] for r in repeat_runs),
+                "successful_requests": sum(r["transport"]["successful_requests"] for r in repeat_runs),
+                "final_failure_count": sum(r["transport"]["final_failure_count"] for r in repeat_runs),
+                "retry_attempt_count": sum(r["transport"]["retry_attempt_count"] for r in repeat_runs),
+            }
+            aggregated_transport["success_rate"] = round(
+                aggregated_transport["successful_requests"] / max(1, aggregated_transport["total_requests"]),
+                4,
+            )
             aggregated = {
                 "config": asdict(config),
                 "repeats": stage_b_repeats,
                 "avg_single_turn_latency_ms": round(avg_single_latency, 2),
                 "avg_multi_turn_latency_ms": round(avg_multi_latency, 2),
                 "single_turn_grounding_score_avg": round(
-                    sum(r["single_turn"]["summary"]["grounding_score"] for r in repeat_runs)
-                    / len(repeat_runs),
+                    sum(r["single_turn"]["summary"]["grounding_score"] for r in repeat_runs) / len(repeat_runs),
                     4,
                 ),
                 "multi_turn_grounding_score_avg": round(
-                    sum(r["multi_turn"]["summary"]["grounding_score"] for r in repeat_runs)
-                    / len(repeat_runs),
+                    sum(r["multi_turn"]["summary"]["grounding_score"] for r in repeat_runs) / len(repeat_runs),
                     4,
                 ),
+                "quality_v2": {
+                    "metrics": averaged_quality_metrics,
+                    "coverage": {
+                        "repeat_count": len(repeat_runs),
+                        "total_rows": sum(
+                            len(r["single_turn"]["rows"]) + len(r["multi_turn"]["rows"]) for r in repeat_runs
+                        ),
+                    },
+                },
+                "confidence_intervals": stage_b_confidence_intervals,
+                "transport": aggregated_transport,
                 "repeat_runs": repeat_runs,
             }
             one_time_embedding_tokens = embedding_estimate["missing_embedding_tokens"]["mid"]
@@ -448,17 +644,33 @@ def run() -> int:
                 reranker_input_price_per_1m=args.reranker_input_price_per_1m,
                 embedding_tokens_one_time=one_time_embedding_tokens,
             )
+            aggregated["gates"] = evaluate_gates(
+                metrics={
+                    **aggregated["quality_v2"]["metrics"],
+                    "single_turn_avg_latency_ms": aggregated["avg_single_turn_latency_ms"],
+                    "multi_turn_avg_latency_ms": aggregated["avg_multi_turn_latency_ms"],
+                    "estimated_usd_per_100_queries": aggregated["cost"]["estimated_usd_per_100_queries"],
+                    "transport_success_rate": aggregated["transport"]["success_rate"],
+                },
+                gate_preset_name=str(args.gate_preset),
+            )
             stage_b_results.append(aggregated)
 
+    ranking = rank_gate_pass_runs(stage_b_results)
     report = {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "api_base_url": args.api_base_url,
         "plan_path": args.plan,
         "single_turn_path": args.single_turn,
         "multi_turn_path": args.multi_turn,
+        "gate_preset": args.gate_preset,
+        "bootstrap_samples": int(args.bootstrap_samples),
+        "bootstrap_seed": int(args.bootstrap_seed),
         "pre_embedding_estimate": embedding_estimate,
+        "comparability": comparability,
         "stage_a_runs": stage_a_results,
         "stage_b_runs": stage_b_results,
+        "ranking": ranking,
     }
 
     report_path = run_dir / "benchmark_report.json"
@@ -470,9 +682,17 @@ def run() -> int:
         f"Generated at (UTC): {report['generated_at_utc']}",
         f"Stage A runs: {len(stage_a_results)}",
         f"Stage B runs: {len(stage_b_results)}",
-        "",
-        "## Stage A Top Families",
+        f"Comparability: {comparability['comparable']}",
     ]
+    for warning in comparability.get("warnings", []):
+        summary_lines.append(f"- WARNING: {warning}")
+
+    summary_lines.extend(
+        [
+            "",
+            "## Stage A Top Families",
+        ]
+    )
     stage_a_sorted = sorted(stage_a_results, key=lambda row: row["family_score"], reverse=True)
     for row in stage_a_sorted[:5]:
         cfg = row["config"]
@@ -481,7 +701,8 @@ def run() -> int:
             f"{cfg['pipeline_mode']} + {cfg['reranker_mode']} + {cfg['embedding_profile']}: "
             f"score={row['family_score']:.4f}, "
             f"single_latency={row['single_turn']['summary']['avg_latency_ms']:.2f}ms, "
-            f"multi_latency={row['multi_turn']['summary']['avg_latency_ms']:.2f}ms"
+            f"multi_latency={row['multi_turn']['summary']['avg_latency_ms']:.2f}ms, "
+            f"gate_pass={row['gates']['overall_pass']}"
         )
     summary_lines.extend(
         [
@@ -495,8 +716,29 @@ def run() -> int:
             "- "
             f"{cfg['pipeline_mode']} + {cfg['reranker_mode']} + {cfg['embedding_profile']}: "
             f"single_latency={row['avg_single_turn_latency_ms']:.2f}ms, "
-            f"multi_latency={row['avg_multi_turn_latency_ms']:.2f}ms"
+            f"multi_latency={row['avg_multi_turn_latency_ms']:.2f}ms, "
+            f"grounded_correctness={row['quality_v2']['metrics'].get('grounded_correctness')}, "
+            f"gate_pass={row['gates']['overall_pass']}"
         )
+    summary_lines.extend(
+        [
+            "",
+            "## Gate-Pass Ranking",
+        ]
+    )
+    if not ranking:
+        summary_lines.append("- No stage B configs passed all gates.")
+    else:
+        for row in ranking:
+            cfg = row["config"]
+            summary_lines.append(
+                "- "
+                f"#{row['rank']} {cfg['pipeline_mode']} + {cfg['reranker_mode']} + {cfg['embedding_profile']}: "
+                f"grounded_correctness={row['grounded_correctness']}, "
+                f"faithfulness={row['faithfulness']}, "
+                f"combined_latency_ms={row['combined_latency_ms']}, "
+                f"estimated_usd_per_100_queries={row['estimated_usd_per_100_queries']}"
+            )
 
     summary_path = run_dir / "benchmark_summary.md"
     summary_path.write_text("\n".join(summary_lines), encoding="utf-8")

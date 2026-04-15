@@ -31,11 +31,10 @@ The runtime now supports two pipeline modes:
 
 Reranking is runtime-selectable:
 - `cross_encoder`: local cross-encoder reranking (`cross-encoder/ms-marco-MiniLM-L-6-v2`) with strict candidate caps.
+- `llm`: prompt-based LLM reranking with numeric score-list parsing and passthrough fallback on parse/runtime failure.
 - `off`: no reranking.
 
 These controls allow direct A/B comparisons without removing baseline behavior.
-
-Historical experiment note: an `llm` reranker mode was also included during benchmark sweeps (March 29, 2026) as part of the trial-and-error methodology. It was later retired from runtime mode options after ablation results showed no quality advantage over `off` and worse latency/token efficiency.
 
 ## Conversation Context Transport
 The backend remains stateless per request. The frontend sends chat history with role/text and optional assistant `cited_sources` metadata.  
@@ -51,7 +50,7 @@ The FastAPI backend exposes admin operations for:
 
 There is no periodic background scheduler for news or document sync. Refresh operations are explicitly user-triggered from the admin API/UI.
 
-Admin runtime settings include embedding profile selection (`local_minilm`, `local_mpnet`, `openai_small`, `openai_large`), pipeline mode, reranker mode, and chunk/parser profiles used for indexed snapshots.
+Admin runtime settings include embedding profile selection (`local_minilm`, `openai_small`, `openai_large`), pipeline mode, reranker mode, and chunk/parser profiles used for indexed snapshots.
 
 ## Snapshot-Based Index Isolation
 To prevent embedding-profile collisions, document indexes are versioned snapshots stored under `data/indexes/<snapshot-id>`.
@@ -104,6 +103,20 @@ Benchmarking beyond single-run evaluation is executed via `scripts/run_benchmark
 - Stage B embedding sweep for selected families
 - Single-turn and multi-turn chat-history scenario sets
 - Cost instrumentation outputs (token/cost estimates with explicit pricing assumptions)
+
+### Solid Gold Benchmark Protocol (April 6, 2026)
+To isolate model/pipeline behavior on manually accepted cases, we executed a strict benchmark protocol using only the solid gold subset:
+- Gold source: `data/eval/gold_set_v2.json` (`46` items total).
+- Derived benchmark inputs:
+  - `data/eval/questions_solid_v2.json` (`32` single-turn)
+  - `data/eval/multi_turn_questions_solid_v2.json` (`14` multi-turn)
+- Full matrix coverage:
+  - embeddings: `local_minilm`, `openai_small`, `openai_large`
+  - pipelines: `baseline_v1`, `enhanced_v2`
+  - rerankers: `off`, `cross_encoder`, `llm`
+  - total Stage B configs: `18`
+- Judge policy: deterministic gold scoring only (`--judge-model ""`), so all rows are scored against explicit gold evidence/terms without LLM-judge primary scoring.
+- Runtime setup: backend started via Docker Compose with GPU override and local profile reindexed first to restore same corpus hash across all embedding profiles before comparison.
 
 ## Deployment and Reproducibility
 The system is containerized with Docker Compose (`backend` + `frontend`). Reproducibility is validated through a fixed command gate: backend tests, frontend tests/build, compose build/start, and health endpoint checks.

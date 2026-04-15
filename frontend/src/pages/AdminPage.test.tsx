@@ -139,6 +139,23 @@ describe("AdminPage", () => {
     });
   });
 
+  it("shows only supported embedding and reranker options", async () => {
+    render(<AdminPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Admin Panel")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("option", { name: /local_minilm/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /openai_small/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /openai_large/i })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /local_mpnet/i })).not.toBeInTheDocument();
+
+    expect(screen.getByRole("option", { name: "off" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "cross_encoder" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "llm" })).toBeInTheDocument();
+  });
+
   it("keeps document sync and reindex as separate triggers", async () => {
     render(<AdminPage />);
 

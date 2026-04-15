@@ -85,4 +85,43 @@ Best-configuration comparison (`enhanced_v2 + local_minilm` family):
 
 Decision:
 - LLM reranking was kept during experimentation to validate the hypothesis.
-- Based on the above ablation, it was removed from runtime options as redundant for current student-policy corpus coverage.
+- Based on the above ablation, `off` remained the preferred baseline for quality/latency tradeoff.
+
+## Solid-Only Gold Benchmark Outcome (April 6, 2026)
+Benchmark source:
+- `data/eval/benchmarks/benchmark_20260406_200454/benchmark_report.json`
+- `data/eval/benchmarks/benchmark_20260406_200454/benchmark_summary.md`
+
+Run protocol:
+- Gold set: `46` manually accepted items (`32` single-turn, `14` multi-turn)
+- Matrix: `3` embeddings × `2` pipelines × `3` rerankers (`18` configs)
+- Deterministic scoring only (`--judge-model ""`)
+- Docker + GPU runtime, with local reindex first to ensure cross-embedding comparability
+
+Validation checks:
+- Stage B runs: `18` unique configs
+- Every Stage B config evaluated `46` rows
+- `gold_covered_rows=46`, `judge_primary_rows=0`, `heuristic_fallback_rows=0` for all Stage B configs
+- `comparability=true` with `0` warnings
+
+Best quality configuration in this matrix:
+- `openai_large + baseline_v1 + off`
+- `grounded_correctness=0.6364`
+- `faithfulness=0.5973`
+- `answer_relevance=0.6079`
+- `completeness=0.7228`
+- `citation_precision=0.8533`
+- Latency: single-turn `8583.52 ms`, multi-turn `7520.29 ms`
+
+Fastest configuration:
+- `local_minilm + baseline_v1 + off`
+- Latency: single-turn `3660.78 ms`, multi-turn `3527.94 ms`
+- Lower quality than the top-quality configuration.
+
+Gate outcome:
+- No Stage B configuration passed all balanced gates.
+- Transport and cost gates passed consistently; the primary blockers were quality thresholds and latency thresholds.
+
+Follow-up signal:
+- `evidence_recall_at_k` stayed `0.0` across all `18` Stage B configs.
+- This indicates a likely retrieval-evidence scoring integration mismatch that should be investigated before interpreting retrieval metrics as final.

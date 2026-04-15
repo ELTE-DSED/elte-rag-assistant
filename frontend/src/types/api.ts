@@ -1,7 +1,7 @@
 export type ChatRole = "user" | "assistant";
-export type EmbeddingProfile = "local_minilm" | "local_mpnet" | "openai_small" | "openai_large";
+export type EmbeddingProfile = "local_minilm" | "openai_small" | "openai_large";
 export type PipelineMode = "baseline_v1" | "enhanced_v2";
-export type RerankerMode = "off" | "cross_encoder";
+export type RerankerMode = "off" | "cross_encoder" | "llm";
 
 export interface SourceItem {
   content: string;

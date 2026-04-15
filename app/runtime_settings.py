@@ -1,5 +1,7 @@
 import json
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
@@ -14,6 +16,10 @@ from app.rag_chain import DEFAULT_SYSTEM_PROMPT
 
 LOCKED_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT.strip()
 ADDITIONAL_SYSTEM_PROMPT_HEADER = "Additional runtime instructions for this deployment:"
+TEMPORAL_CONTEXT_HEADER = "Runtime temporal context (Europe/Budapest):"
+_RUNTIME_TIMEZONE = ZoneInfo("Europe/Budapest")
+_AUTUMN_TERM_LABEL = "Autumn/Fall/1st semester"
+_SPRING_TERM_LABEL = "Spring/2nd semester"
 
 
 class RuntimeSettings(BaseModel):
@@ -30,12 +36,39 @@ class RuntimeSettings(BaseModel):
     embedding_model: str
 
 
-def compose_system_prompt(editable_prompt: str | None) -> str:
+def _resolve_current_term(now: datetime) -> str:
+    local_now = now.astimezone(_RUNTIME_TIMEZONE)
+    local_date = local_now.date()
+    autumn_start_year = local_date.year if local_date.month >= 8 else local_date.year - 1
+    autumn_start = local_date.replace(year=autumn_start_year, month=8, day=1)
+    autumn_end = local_date.replace(year=autumn_start_year + 1, month=1, day=20)
+    if autumn_start <= local_date <= autumn_end:
+        return _AUTUMN_TERM_LABEL
+    return _SPRING_TERM_LABEL
+
+
+def _build_temporal_context_block(now: datetime | None = None) -> str:
+    resolved_now = (now or datetime.now(_RUNTIME_TIMEZONE)).astimezone(_RUNTIME_TIMEZONE)
+    current_date = resolved_now.strftime("%Y-%m-%d")
+    weekday = resolved_now.strftime("%A")
+    current_term = _resolve_current_term(resolved_now)
+    return "\n".join(
+        [
+            TEMPORAL_CONTEXT_HEADER,
+            f"- current_date: {current_date}",
+            f"- weekday: {weekday}",
+            f"- current_term: {current_term}",
+        ]
+    )
+
+
+def compose_system_prompt(editable_prompt: str | None, *, now: datetime | None = None) -> str:
+    temporal_block = _build_temporal_context_block(now=now)
     extra = (editable_prompt or "").strip()
     if not extra:
-        return LOCKED_SYSTEM_PROMPT
+        return f"{LOCKED_SYSTEM_PROMPT}\n\n{temporal_block}"
     return (
-        f"{LOCKED_SYSTEM_PROMPT}\n\n"
+        f"{LOCKED_SYSTEM_PROMPT}\n\n{temporal_block}\n\n"
         f"{ADDITIONAL_SYSTEM_PROMPT_HEADER}\n{extra}"
     )
 
@@ -67,7 +100,12 @@ def _infer_profile_from_legacy_values(
     if normalized_provider == "local":
         if normalized_model == "all-minilm-l6-v2":
             return "local_minilm"
-        return "local_mpnet"
+        if normalized_model == "all-mpnet-base-v2":
+            raise ValueError(
+                "Embedding profile 'local_mpnet' is no longer supported. "
+                "Use 'local_minilm', 'openai_small', or 'openai_large'."
+            )
+        return "local_minilm"
 
     if "text-embedding-3-small" in normalized_model:
         return "openai_small"
@@ -77,12 +115,8 @@ def _infer_profile_from_legacy_values(
 
 def _normalize_embedding_fields(payload: dict, *, prefer_legacy: bool = False) -> dict:
     embedding_profile = payload.get("embedding_profile")
-    if prefer_legacy or embedding_profile not in {
-        "local_minilm",
-        "local_mpnet",
-        "openai_small",
-        "openai_large",
-    }:
+    supported_profiles = {"local_minilm", "openai_small", "openai_large"}
+    if prefer_legacy or embedding_profile in {None, ""}:
         embedding_profile = _infer_profile_from_legacy_values(
             str(payload.get("embedding_provider", settings.embedding_provider)),
             str(
@@ -93,6 +127,11 @@ def _normalize_embedding_fields(payload: dict, *, prefer_legacy: bool = False) -
                     else settings.openrouter_embedding_model,
                 )
             ),
+        )
+    elif embedding_profile not in supported_profiles:
+        raise ValueError(
+            f"Unsupported embedding profile: {embedding_profile}. "
+            "Supported values: local_minilm, openai_small, openai_large."
         )
 
     spec = get_embedding_profile_spec(embedding_profile)  # type: ignore[arg-type]
@@ -107,17 +146,18 @@ def _normalize_reranker_mode(value: str | None) -> RerankerMode:
     normalized = (value or "").strip().lower()
     if normalized == "cross_encoder":
         return "cross_encoder"
-    # Legacy "llm" mode is retired and now maps to "off".
+    if normalized == "llm":
+        return "llm"
     return "off"
 
 
 def build_default_runtime_settings() -> RuntimeSettings:
     default_profile = getattr(settings, "default_embedding_profile", "local_minilm")
-    if default_profile not in {"local_minilm", "local_mpnet", "openai_small", "openai_large"}:
+    if default_profile not in {"local_minilm", "openai_small", "openai_large"}:
         default_profile = _infer_profile_from_legacy_values(
             str(getattr(settings, "embedding_provider", "local")),
             str(
-                getattr(settings, "embedding_model_name", "all-mpnet-base-v2")
+                getattr(settings, "embedding_model_name", "all-MiniLM-L6-v2")
                 if str(getattr(settings, "embedding_provider", "local")).lower() == "local"
                 else getattr(
                     settings,

@@ -1,0 +1,200 @@
+{
+    "scenarios":  [
+                      {
+                          "id":  "multi-passive_semester_reference",
+                          "query":  "Can I do that after the deadline?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "How do I request a passive semester?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "You need to submit the request through the proper university administration workflow. [C1]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-exam_retake_follow_up",
+                          "query":  "And is there usually a fee?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "What are the exam retake rules?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Retake options are defined in the academic regulations and depend on the exam policy. [C1]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-erasmus_follow_up",
+                          "query":  "Who should I contact first?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "How can I apply for Erasmus?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Application details are published by the faculty and international office channels. [C3]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-thesis_upload_defense_follow_up",
+                          "query":  "And after upload, what are the next defense preparation steps?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "How do I upload my thesis?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "You need to follow the official upload workflow and submission window in Neptun. [C2]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-internship_docs_follow_up",
+                          "query":  "Which one has to be submitted first?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "What documents do I need for internship administration?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Typically internship acceptance and completion/reference documents are required. [C2]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-fixed_group_conflict_follow_up",
+                          "query":  "Where exactly do I submit this request?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "My fixed group classes overlap."
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "There is an official process for resolving clashing classes and attendance issues. [C1]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-final_exam_components_follow_up",
+                          "query":  "Are practical components weighted differently than oral parts?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "How is the final examination structured?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "The final exam includes defined components and evaluation criteria from the program documents. [C1]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-neptun_registration_follow_up",
+                          "query":  "How can I check which of those is causing my case?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "I cannot register for a subject in Neptun."
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "This can happen due to timetable conflicts, missing prerequisites, or registration windows. [C3]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-tuition_eur_follow_up",
+                          "query":  "Where do I verify the exact recipient account details?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "I need to pay tuition in EUR."
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "There is a specific transfer workflow for tuition payments in EUR. [C2]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-student_card_follow_up",
+                          "query":  "Can I start classes while the card is still being processed?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "How do I apply for a student card?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Student card issuance follows a documented administrative process and required data steps. [C1]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-taj_insurance_follow_up",
+                          "query":  "Which office should I contact first for this?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "I am an international student and I do not have TAJ yet."
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "You should follow the official TAJ and health insurance guidance for ELTE students. [C3]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-curriculum_version_follow_up",
+                          "query":  "How do I confirm my cohort-specific version?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "Which educational plan applies to me?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "The applicable curriculum depends on your program and admission cohort. [C2]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-exceptional_request_status_follow_up",
+                          "query":  "How can I check whether it was approved or still pending?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "I submitted an exceptional academic request."
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Processing follows the official request workflow and decision timeline. [C2]"
+                                          }
+                                      ]
+                      },
+                      {
+                          "id":  "multi-language_courses_follow_up",
+                          "query":  "Do those credits count into my degree requirements?",
+                          "history":  [
+                                          {
+                                              "role":  "user",
+                                              "text":  "Can IK students take foreign language courses?"
+                                          },
+                                          {
+                                              "role":  "assistant",
+                                              "text":  "Yes, ELTE offers language course options under specific enrollment rules. [C3]"
+                                          }
+                                      ]
+                      }
+                  ]
+}
