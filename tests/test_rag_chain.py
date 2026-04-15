@@ -12,6 +12,7 @@ from app.rag_chain import (
     _replace_inline_chunk_citations,
     _rewrite_follow_up_query,
     _rerank,
+    _rerank_llm,
     _rerank_cross_encoder,
     RAG_PROMPT,
     get_llm,
@@ -211,6 +212,25 @@ class TestRerank:
         rerank_cross_encoder_mock.assert_awaited_once()
 
     @pytest.mark.asyncio
+    @patch("app.rag_chain._rerank_llm", new_callable=AsyncMock)
+    async def test_rerank_llm_mode_dispatches(self, rerank_llm_mock):
+        expected_docs = [
+            Document(page_content="Doc C", metadata={"title": "C"}),
+            Document(page_content="Doc A", metadata={"title": "A"}),
+        ]
+        rerank_llm_mock.return_value = expected_docs
+
+        docs = [
+            Document(page_content="Doc A", metadata={"title": "A"}),
+            Document(page_content="Doc B", metadata={"title": "B"}),
+            Document(page_content="Doc C", metadata={"title": "C"}),
+        ]
+
+        result = await _rerank("test query", docs, top_k=2, reranker_mode="llm")
+        assert result == expected_docs
+        rerank_llm_mock.assert_awaited_once()
+
+    @pytest.mark.asyncio
     async def test_rerank_disabled(self):
         """When reranker is disabled, documents are returned as-is."""
         docs = [
@@ -257,6 +277,62 @@ class TestRerank:
         result = await _rerank_cross_encoder(query="query", docs=docs, top_k=3)
         assert len(result) == 3
         assert [doc.page_content for doc in result] == ["Doc 0", "Doc 1", "Doc 2"]
+
+    @pytest.mark.asyncio
+    @patch("app.rag_chain.get_llm")
+    async def test_llm_rerank_uses_valid_score_list(self, get_llm_mock):
+        docs = [
+            Document(page_content="Doc A", metadata={}),
+            Document(page_content="Doc B", metadata={}),
+            Document(page_content="Doc C", metadata={}),
+        ]
+
+        async def _scores(_input):
+            return "[0.1, 0.9, 0.4]"
+
+        get_llm_mock.return_value = RunnableLambda(_scores)
+
+        result = await _rerank_llm(query="query", docs=docs, top_k=2)
+        assert [doc.page_content for doc in result] == ["Doc B", "Doc C"]
+
+    @pytest.mark.asyncio
+    @patch("app.rag_chain.get_llm")
+    async def test_llm_rerank_falls_back_on_invalid_or_mismatched_scores(self, get_llm_mock):
+        docs = [
+            Document(page_content="Doc A", metadata={}),
+            Document(page_content="Doc B", metadata={}),
+            Document(page_content="Doc C", metadata={}),
+        ]
+
+        async def _bad_json(_input):
+            return "not-json"
+
+        get_llm_mock.return_value = RunnableLambda(_bad_json)
+        result_bad_json = await _rerank_llm(query="query", docs=docs, top_k=2)
+        assert [doc.page_content for doc in result_bad_json] == ["Doc A", "Doc B"]
+
+        async def _mismatched(_input):
+            return "[0.9, 0.1]"
+
+        get_llm_mock.return_value = RunnableLambda(_mismatched)
+        result_mismatched = await _rerank_llm(query="query", docs=docs, top_k=2)
+        assert [doc.page_content for doc in result_mismatched] == ["Doc A", "Doc B"]
+
+    @pytest.mark.asyncio
+    @patch("app.rag_chain.get_llm")
+    async def test_llm_rerank_falls_back_on_exception(self, get_llm_mock):
+        docs = [
+            Document(page_content="Doc A", metadata={}),
+            Document(page_content="Doc B", metadata={}),
+        ]
+
+        async def _raise(_input):
+            raise Exception("boom")
+
+        get_llm_mock.return_value = RunnableLambda(_raise)
+
+        result = await _rerank_llm(query="query", docs=docs, top_k=1)
+        assert [doc.page_content for doc in result] == ["Doc A"]
 
 
 class TestFollowUpResolver:

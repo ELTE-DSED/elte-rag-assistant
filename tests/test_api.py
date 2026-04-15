@@ -196,7 +196,10 @@ class TestAskEndpoint:
             assert entry["source_types"]["news"] == 0
 
             used_prompt = rag_ask_mock.call_args.kwargs["system_prompt"]
-            assert used_prompt == LOCKED_SYSTEM_PROMPT
+            assert LOCKED_SYSTEM_PROMPT in used_prompt
+            assert "Runtime temporal context (Europe/Budapest):" in used_prompt
+            assert "current_date" in used_prompt
+            assert "current_term" in used_prompt
 
     def test_ask_forwards_chat_history(self, client):
         mock_result = RAGResult(
@@ -347,6 +350,25 @@ class TestAdminSettingsEndpoint:
         assert data["system_prompt"] == "Demo prompt"
         assert data["pipeline_mode"] == "enhanced_v2"
         assert data["reranker_mode"] == "off"
+
+    def test_update_settings_accepts_llm_reranker_mode(self, client):
+        resp = client.put(
+            "/admin/settings",
+            json={
+                "reranker_mode": "llm",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["reranker_mode"] == "llm"
+
+    def test_update_settings_rejects_removed_local_mpnet_profile(self, client):
+        resp = client.put(
+            "/admin/settings",
+            json={
+                "embedding_profile": "local_mpnet",
+            },
+        )
+        assert resp.status_code == 422
 
     def test_get_active_index(self, client):
         resp = client.get("/admin/indexes/active")
