@@ -89,15 +89,9 @@ uv run python scripts/run_evaluation.py --api-base-url http://127.0.0.1:8001
 
 Artifacts:
 - `data/eval/latest_metrics.json`
-- `docs/thesis/evaluation.md`
+- `data/eval/latest_metrics.md`
 
 ## Benchmark Commands
-Cost estimate for missing corpus embeddings:
-
-```bash
-uv run python scripts/estimate_embedding_cost.py
-```
-
 Staged benchmark matrix (single-turn + multi-turn):
 
 ```bash
@@ -113,42 +107,5 @@ uv run python scripts/run_benchmarks.py \
   --single-turn data/eval/questions_solid_v2.json \
   --multi-turn data/eval/multi_turn_questions_solid_v2.json \
   --gold-set data/eval/gold_set_v2.json \
-  --judge-model "" \
-  --index-pkl data/indexes/<snapshot>__local_minilm__standard__docling_v1/index.pkl
+  --judge-model ""
 ```
-
-## Reranker Decision Trail
-On March 29, 2026 (benchmark artifact: `data/eval/benchmarks/benchmark_20260329_141148/benchmark_report.json`), we evaluated three reranker modes in Stage A: `off`, `cross_encoder`, and `llm`.
-
-- Average Stage A family score by reranker mode:
-  - `off`: `0.6155`
-  - `cross_encoder`: `0.4697`
-  - `llm`: `0.4190`
-- Best `off` run (`enhanced_v2 + off + local_minilm`) vs best `llm` run (`enhanced_v2 + llm + local_minilm`):
-  - Quality score delta: `+0.1300` in favor of `off`
-  - Single-turn latency delta: `-1582.06 ms` (faster with `off`)
-  - Multi-turn latency delta: `-1017.15 ms` (faster with `off`)
-  - LLM reranker token overhead: `67699` reranker input tokens in the best `llm` run
-
-Current runtime options keep all three reranker modes (`off`, `cross_encoder`, `llm`) for controlled comparison and benchmarking.
-
-## Solid Gold Benchmark Decision Trail (April 6, 2026)
-Artifact:
-- `data/eval/benchmarks/benchmark_20260406_200454/benchmark_report.json`
-
-Protocol:
-- Gold-only set: `46` rows (`32` single-turn, `14` multi-turn)
-- Full matrix: `3` embeddings × `2` pipelines × `3` rerankers (`18` configs)
-- Deterministic gold scoring only (`--judge-model ""`)
-- Comparability check: `true` (same corpus hash across embeddings)
-
-Best quality configuration in this run:
-- `openai_large + baseline_v1 + off`
-- `grounded_correctness=0.6364`
-- `faithfulness=0.5973`
-- `citation_precision=0.8533`
-
-Fastest configuration in this run:
-- `local_minilm + baseline_v1 + off`
-- single-turn latency `3660.78 ms`
-- multi-turn latency `3527.94 ms`
