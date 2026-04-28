@@ -1,3 +1,4 @@
 export function shouldInjectOnHostname(hostname: string): boolean {
-  return hostname.toLowerCase() === "inf.elte.hu";
+  const normalizedHostname = hostname.toLowerCase();
+  return normalizedHostname === "inf.elte.hu" || normalizedHostname === "www.inf.elte.hu";
 }

@@ -5,6 +5,11 @@ export const CONTENT_STYLES = `
 
 .elte-chat-host {
   all: initial;
+  --elte-primary: rgb(0, 159, 163);
+  --elte-primary-hover: rgb(0, 132, 136);
+  --elte-primary-soft: rgba(0, 159, 163, 0.1);
+  --elte-primary-border: rgba(0, 159, 163, 0.35);
+  --elte-primary-ring: rgba(0, 159, 163, 0.24);
   font-family: Inter, "Segoe UI", Tahoma, sans-serif;
 }
 
@@ -13,9 +18,9 @@ export const CONTENT_STYLES = `
   right: 20px;
   bottom: 20px;
   z-index: 2147483646;
-  border: 1px solid rgba(14, 116, 144, 0.24);
+  border: 1px solid rgba(0, 159, 163, 0.28);
   border-radius: 999px;
-  background: #0d738f;
+  background: var(--elte-primary);
   color: #f8fbff;
   height: 48px;
   min-width: 132px;
@@ -31,7 +36,7 @@ export const CONTENT_STYLES = `
 }
 
 .elte-chat-fab:hover {
-  background: #0b647c;
+  background: var(--elte-primary-hover);
 }
 
 .elte-chat-backdrop {
@@ -78,7 +83,7 @@ export const CONTENT_STYLES = `
   margin: 0;
   font-size: 16px;
   font-weight: 700;
-  color: #0d738f;
+  color: var(--elte-primary);
 }
 
 .elte-chat-header-actions {
@@ -118,8 +123,8 @@ export const CONTENT_STYLES = `
 }
 
 .elte-message-user {
-  background: rgba(13, 115, 143, 0.09);
-  border-color: rgba(13, 115, 143, 0.35);
+  background: var(--elte-primary-soft);
+  border-color: var(--elte-primary-border);
   margin-left: auto;
 }
 
@@ -152,8 +157,17 @@ export const CONTENT_STYLES = `
   margin-top: 8px;
 }
 
+.elte-markdown ul,
+.elte-markdown ol {
+  padding-left: 18px;
+}
+
+.elte-markdown li + li {
+  margin-top: 4px;
+}
+
 .elte-link {
-  color: #0d738f;
+  color: var(--elte-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -167,7 +181,7 @@ export const CONTENT_STYLES = `
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #0d738f;
+  color: var(--elte-primary);
   cursor: pointer;
   font-size: 1em;
   font-weight: 700;
@@ -176,7 +190,7 @@ export const CONTENT_STYLES = `
 }
 
 .elte-inline-citation:hover {
-  background: rgba(13, 115, 143, 0.12);
+  background: rgba(0, 159, 163, 0.12);
 }
 
 .elte-meta {
@@ -187,6 +201,76 @@ export const CONTENT_STYLES = `
 
 .elte-meta span {
   font-weight: 600;
+}
+
+.elte-confidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.elte-confidence-badge {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.elte-confidence-low {
+  border-color: #f2a6ad;
+  background: #fff0f1;
+  color: #a72330;
+}
+
+.elte-confidence-medium {
+  border-color: #f0c36a;
+  background: #fff7e6;
+  color: #8a5600;
+}
+
+.elte-confidence-high {
+  border-color: #9bd9b2;
+  background: #eaf8ef;
+  color: #156d44;
+}
+
+.elte-confidence-unknown {
+  border-color: #d2d9e0;
+  background: #f4f7f9;
+  color: #4f5d68;
+}
+
+.elte-reasoning {
+  margin-top: 6px;
+  border-radius: 8px;
+  color: #5b6773;
+  font-size: 12px;
+}
+
+.elte-reasoning-summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--elte-primary);
+  list-style-position: inside;
+}
+
+.elte-reasoning-summary:hover {
+  color: var(--elte-primary-hover);
+}
+
+.elte-reasoning-summary:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 3px var(--elte-primary-ring);
+}
+
+.elte-reasoning-text {
+  margin: 6px 0 0;
+  line-height: 1.45;
 }
 
 .elte-feedback-row {
@@ -238,8 +322,8 @@ export const CONTENT_STYLES = `
 }
 
 .elte-citation-card-highlighted {
-  border-color: rgba(13, 115, 143, 0.6);
-  box-shadow: 0 0 0 2px rgba(13, 115, 143, 0.25);
+  border-color: rgba(0, 159, 163, 0.6);
+  box-shadow: 0 0 0 2px var(--elte-primary-ring);
 }
 
 .elte-citation-header {
@@ -308,8 +392,8 @@ export const CONTENT_STYLES = `
 }
 
 .elte-chat-input:focus {
-  border-color: #0d738f;
-  box-shadow: 0 0 0 3px rgba(13, 115, 143, 0.2);
+  border-color: var(--elte-primary);
+  box-shadow: 0 0 0 3px var(--elte-primary-ring);
 }
 
 .elte-btn {
@@ -332,12 +416,12 @@ export const CONTENT_STYLES = `
 }
 
 .elte-btn-primary {
-  background: #0d738f;
+  background: var(--elte-primary);
   color: #fff;
 }
 
 .elte-btn-primary:hover:not(:disabled) {
-  background: #0b647c;
+  background: var(--elte-primary-hover);
 }
 
 .elte-btn-outline {

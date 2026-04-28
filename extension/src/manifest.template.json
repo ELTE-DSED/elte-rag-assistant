@@ -11,7 +11,12 @@
   "options_page": "options.html",
   "content_scripts": [
     {
-      "matches": ["https://inf.elte.hu/*", "http://inf.elte.hu/*"],
+      "matches": [
+        "https://inf.elte.hu/*",
+        "http://inf.elte.hu/*",
+        "https://www.inf.elte.hu/*",
+        "http://www.inf.elte.hu/*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }

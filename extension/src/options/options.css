@@ -1,11 +1,14 @@
 :root {
   color-scheme: light;
+  --elte-primary: rgb(0, 159, 163);
+  --elte-primary-hover: rgb(0, 132, 136);
+  --elte-primary-ring: rgba(0, 159, 163, 0.24);
 }
 
 body {
   margin: 0;
   font-family: Inter, "Segoe UI", Tahoma, sans-serif;
-  background: radial-gradient(circle at 18% 14%, rgba(14, 116, 144, 0.12), transparent 46%),
+  background: radial-gradient(circle at 18% 14%, rgba(0, 159, 163, 0.12), transparent 46%),
     radial-gradient(circle at 83% 22%, rgba(16, 185, 129, 0.12), transparent 45%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 250, 242, 0.95));
   color: #1f2b35;
@@ -51,8 +54,8 @@ input {
 
 input:focus {
   outline: none;
-  border-color: #0d738f;
-  box-shadow: 0 0 0 3px rgba(13, 115, 143, 0.2);
+  border-color: var(--elte-primary);
+  box-shadow: 0 0 0 3px var(--elte-primary-ring);
 }
 
 .actions {
@@ -65,7 +68,7 @@ button {
   border-radius: 8px;
   height: 36px;
   padding: 0 14px;
-  background: #0d738f;
+  background: var(--elte-primary);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -73,7 +76,7 @@ button {
 }
 
 button:hover {
-  background: #0b647c;
+  background: var(--elte-primary-hover);
 }
 
 button.secondary {

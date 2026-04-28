@@ -1,4 +1,4 @@
-import { FormEvent, MouseEvent, type ReactNode, useEffect, useMemo, useState } from "react";
+import { FormEvent, MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   ExternalLink,
@@ -9,6 +9,8 @@ import {
   User,
   X,
 } from "lucide-react";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import {
   buildCitationSourceUrl,
@@ -37,50 +39,45 @@ function classNames(...parts: Array<string | false | null | undefined>): string 
   return parts.filter(Boolean).join(" ");
 }
 
-function renderAssistantTextWithCitationButtons(
-  message: ChatMessage,
-  onInlineCitationClick: (messageId: string, citationId: string) => void,
-): ReactNode[] {
-  const normalizedText = normalizeInlineCitations(message.text, message.citedSources);
-  const citationPattern = /\[([^\]]+)\]\(cite:([^)]+)\)/gi;
-  const segments: ReactNode[] = [];
+function normalizeCitationId(value: string): string {
+  return value.trim().toUpperCase();
+}
 
-  let cursor = 0;
-  let match: RegExpExecArray | null;
-  while ((match = citationPattern.exec(normalizedText)) !== null) {
-    const [fullMatch, label, citationIdRaw] = match;
-    const startIndex = match.index;
+function markdownUrlTransform(url: string): string {
+  if (url.startsWith("cite:")) {
+    return url;
+  }
+  return defaultUrlTransform(url);
+}
 
-    if (startIndex > cursor) {
-      segments.push(normalizedText.slice(cursor, startIndex));
-    }
-
-    const citationId = citationIdRaw.toUpperCase();
-    segments.push(
-      <sup key={`${message.id}-${citationId}-${startIndex}`} className="elte-inline-citation-wrap">
-        <button
-          type="button"
-          aria-label={`Citation ${citationId}`}
-          title={`Go to citation ${citationId}`}
-          onClick={() => onInlineCitationClick(message.id, citationId)}
-          className="elte-inline-citation"
-        >
-          {label}
-        </button>
-      </sup>,
-    );
-
-    cursor = startIndex + fullMatch.length;
+function getElementByIdInRoot(rootNode: Node | null, elementId: string): HTMLElement | null {
+  if (rootNode instanceof Document) {
+    return rootNode.getElementById(elementId);
   }
 
-  if (cursor < normalizedText.length) {
-    segments.push(normalizedText.slice(cursor));
+  if (rootNode instanceof ShadowRoot) {
+    return rootNode.getElementById(elementId);
   }
 
-  return segments.length > 0 ? segments : [normalizedText];
+  return null;
+}
+
+function confidenceClassName(confidence: string): string {
+  const normalizedConfidence = confidence.trim().toLowerCase();
+  if (normalizedConfidence === "low") {
+    return "elte-confidence-low";
+  }
+  if (normalizedConfidence === "medium") {
+    return "elte-confidence-medium";
+  }
+  if (normalizedConfidence === "high") {
+    return "elte-confidence-high";
+  }
+  return "elte-confidence-unknown";
 }
 
 export function ChatWidget() {
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([welcomeMessage]);
   const [query, setQuery] = useState("");
@@ -208,8 +205,14 @@ export function ChatWidget() {
   };
 
   const onInlineCitationClick = (messageId: string, citationId: string) => {
-    const key = `${messageId}:${citationId}`;
-    const element = document.getElementById(`citation-${messageId}-${citationId}`);
+    const normalizedCitationId = normalizeCitationId(citationId);
+    const key = `${messageId}:${normalizedCitationId}`;
+    const elementId = `citation-${messageId}-${normalizedCitationId}`;
+    const rootNode = messagesContainerRef.current?.getRootNode() ?? null;
+    const element =
+      getElementByIdInRoot(rootNode, elementId) ??
+      messagesContainerRef.current?.querySelector<HTMLElement>(`#${elementId}`);
+
     if (element && typeof element.scrollIntoView === "function") {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -346,7 +349,12 @@ export function ChatWidget() {
             </header>
 
             <div className="elte-chat-body">
-              <div className="elte-chat-messages" role="log" aria-live="polite">
+              <div
+                ref={messagesContainerRef}
+                className="elte-chat-messages"
+                role="log"
+                aria-live="polite"
+              >
                 {messages.map((message) => (
                   <article
                     key={message.id}
@@ -365,21 +373,72 @@ export function ChatWidget() {
                     </div>
 
                     {message.role === "assistant" ? (
-                      <p className="elte-user-text">
-                        {renderAssistantTextWithCitationButtons(message, onInlineCitationClick)}
-                      </p>
+                      <div className="elte-markdown">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          urlTransform={markdownUrlTransform}
+                          components={{
+                            a: ({ href, children }) => {
+                              if (href?.startsWith("cite:")) {
+                                const citationId = normalizeCitationId(
+                                  href.slice("cite:".length),
+                                );
+                                return (
+                                  <sup className="elte-inline-citation-wrap">
+                                    <button
+                                      type="button"
+                                      aria-label={`Citation ${citationId}`}
+                                      title={`Go to citation ${citationId}`}
+                                      onClick={() =>
+                                        onInlineCitationClick(message.id, citationId)
+                                      }
+                                      className="elte-inline-citation"
+                                    >
+                                      {children}
+                                    </button>
+                                  </sup>
+                                );
+                              }
+
+                              return (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer noopener"
+                                  className="elte-link"
+                                >
+                                  {children}
+                                </a>
+                              );
+                            },
+                          }}
+                        >
+                          {normalizeInlineCitations(message.text, message.citedSources)}
+                        </ReactMarkdown>
+                      </div>
                     ) : (
                       <p className="elte-user-text">{message.text}</p>
                     )}
 
                     {message.role === "assistant" && message.confidence ? (
-                      <p className="elte-meta">
-                        Confidence: <span>{message.confidence}</span>
+                      <p className="elte-meta elte-confidence">
+                        Confidence:
+                        <span
+                          className={classNames(
+                            "elte-confidence-badge",
+                            confidenceClassName(message.confidence),
+                          )}
+                        >
+                          {message.confidence}
+                        </span>
                       </p>
                     ) : null}
 
                     {message.role === "assistant" && message.reasoning ? (
-                      <p className="elte-meta">Reasoning: {message.reasoning}</p>
+                      <details className="elte-reasoning">
+                        <summary className="elte-reasoning-summary">Reasoning</summary>
+                        <p className="elte-reasoning-text">{message.reasoning}</p>
+                      </details>
                     ) : null}
 
                     {message.role === "assistant" && message.requestId ? (
@@ -416,7 +475,9 @@ export function ChatWidget() {
                       <div className="elte-citations">
                         <p className="elte-citations-title">Citations</p>
                         {message.citedSources.map((source, index) => {
-                          const citationId = source.citation_id || `C${index + 1}`;
+                          const citationId = normalizeCitationId(
+                            source.citation_id || `C${index + 1}`,
+                          );
                           const citationKey = `${message.id}:${citationId}`;
                           const sourceUrl = buildCitationSourceUrl(source, apiBaseUrl);
                           const isHighlighted = highlightedCitationKey === citationKey;
