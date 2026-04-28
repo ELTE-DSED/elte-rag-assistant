@@ -23,7 +23,6 @@ from app.evaluation_v2 import (
     rank_gate_pass_runs,
     score_quality_v2,
 )
-from estimate_embedding_cost import build_estimate
 
 
 EMBEDDING_PRICE_USD_PER_1M = {
@@ -420,8 +419,6 @@ def run() -> int:
     parser.add_argument("--single-turn", default="data/eval/questions.json")
     parser.add_argument("--multi-turn", default="data/eval/multi_turn_questions.json")
     parser.add_argument("--output-dir", default="data/eval/benchmarks")
-    parser.add_argument("--raw-dir", default="data/raw")
-    parser.add_argument("--index-pkl", default="data/vector_store/index.pkl")
     parser.add_argument("--generator-input-price-per-1m", type=float, default=0.0)
     parser.add_argument("--generator-output-price-per-1m", type=float, default=0.0)
     parser.add_argument("--reranker-input-price-per-1m", type=float, default=0.0)
@@ -444,7 +441,6 @@ def run() -> int:
     plan = json.loads(Path(args.plan).read_text(encoding="utf-8"))
     single_turn_questions = _load_single_turn_questions(Path(args.single_turn))
     multi_turn_scenarios = _load_multi_turn_scenarios(Path(args.multi_turn))
-    embedding_estimate = build_estimate(Path(args.raw_dir), Path(args.index_pkl))
     gold_set_path = Path(args.gold_set)
     gold_set = load_gold_set(gold_set_path) if gold_set_path.exists() else None
 
@@ -509,7 +505,6 @@ def run() -> int:
                 bootstrap_samples=max(1, int(args.bootstrap_samples)),
                 bootstrap_seed=int(args.bootstrap_seed),
             )
-            one_time_embedding_tokens = embedding_estimate["missing_embedding_tokens"]["mid"]
             run_metrics["cost"] = _estimate_run_cost(
                 config=config,
                 rows=run_metrics["single_turn"]["rows"] + run_metrics["multi_turn"]["rows"],
@@ -518,7 +513,7 @@ def run() -> int:
                 generator_input_price_per_1m=args.generator_input_price_per_1m,
                 generator_output_price_per_1m=args.generator_output_price_per_1m,
                 reranker_input_price_per_1m=args.reranker_input_price_per_1m,
-                embedding_tokens_one_time=one_time_embedding_tokens,
+                embedding_tokens_one_time=0,
             )
             run_metrics["family_score"] = _family_score(run_metrics)
             gate_input_metrics = {
@@ -629,7 +624,6 @@ def run() -> int:
                 "transport": aggregated_transport,
                 "repeat_runs": repeat_runs,
             }
-            one_time_embedding_tokens = embedding_estimate["missing_embedding_tokens"]["mid"]
             aggregated["cost"] = _estimate_run_cost(
                 config=config,
                 rows=[
@@ -642,7 +636,7 @@ def run() -> int:
                 generator_input_price_per_1m=args.generator_input_price_per_1m,
                 generator_output_price_per_1m=args.generator_output_price_per_1m,
                 reranker_input_price_per_1m=args.reranker_input_price_per_1m,
-                embedding_tokens_one_time=one_time_embedding_tokens,
+                embedding_tokens_one_time=0,
             )
             aggregated["gates"] = evaluate_gates(
                 metrics={
@@ -666,7 +660,6 @@ def run() -> int:
         "gate_preset": args.gate_preset,
         "bootstrap_samples": int(args.bootstrap_samples),
         "bootstrap_seed": int(args.bootstrap_seed),
-        "pre_embedding_estimate": embedding_estimate,
         "comparability": comparability,
         "stage_a_runs": stage_a_results,
         "stage_b_runs": stage_b_results,

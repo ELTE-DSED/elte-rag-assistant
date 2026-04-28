@@ -329,7 +329,7 @@ def main() -> int:
     parser.add_argument("--questions", default="data/eval/questions.json", help="Path to evaluation questions JSON")
     parser.add_argument("--multi-turn", default=None, help="Optional multi-turn scenarios JSON path")
     parser.add_argument("--output-json", default="data/eval/latest_metrics.json", help="Metrics output JSON path")
-    parser.add_argument("--output-md", default="docs/thesis/evaluation.md", help="Markdown report output path")
+    parser.add_argument("--output-md", default="data/eval/latest_metrics.md", help="Markdown report output path")
     parser.add_argument("--timeout-seconds", type=float, default=45.0, help="Per-request timeout")
     parser.add_argument("--concurrency", type=int, default=8, help="Target in-flight request count")
     parser.add_argument("--max-retries", type=int, default=3, help="Maximum retries for retryable transport failures")
