@@ -16,7 +16,18 @@ Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 
 ### Backend
 ```bash
-.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+# install dependencies with uv
+uv sync --extra dev
+
+# or install with pip
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+
+# run with uv
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+
+# or run from the virtual environment
+.venv\Scripts\uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 ### Frontend
