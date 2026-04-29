@@ -1,9 +1,8 @@
 # ELTE RAG Assistant
 
-[![Tests](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/w04m1/elte-rag-assistant/branch/main/graph/badge.svg?token=8V3W1VBQBH)](https://codecov.io/gh/w04m1/elte-rag-assistant)
-[![Tests (dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml)
-[![codecov](https://codecov.io/gh/w04m1/elte-rag-assistant/branch/dev/graph/badge.svg?token=8V3W1VBQBH)](https://codecov.io/gh/w04m1/elte-rag-assistant)
+**main:** [![Tests (main)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml?query=branch%3Amain) [![Coverage (main)](https://codecov.io/gh/w04m1/elte-rag-assistant/branch/main/graph/badge.svg?token=8V3W1VBQBH)](https://codecov.io/gh/w04m1/elte-rag-assistant/tree/main)
+
+**dev:** [![Tests (dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml/badge.svg?branch=dev)](https://github.com/w04m1/elte-rag-assistant/actions/workflows/tests.yml?query=branch%3Adev) [![Coverage (dev)](https://codecov.io/gh/w04m1/elte-rag-assistant/branch/dev/graph/badge.svg?token=8V3W1VBQBH)](https://codecov.io/gh/w04m1/elte-rag-assistant/tree/dev)
 
 Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 
