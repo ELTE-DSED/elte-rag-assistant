@@ -9,7 +9,7 @@ Retrieval-augmented FAQ assistant for ELTE policy and administration questions.
 ## Stack
 - Backend: FastAPI + LangChain + FAISS + BM25 + optional rerankers (`off`, `cross_encoder`, `llm`)
 - Frontend: Vite + React + TypeScript + Tailwind (chat + admin)
-- Ingestion: Typesense document sync + Docling for PDF/DOCX + normalized JSON for news
+- Ingestion: Typesense document sync + Docling for PDFs + normalized JSON for news
 - Deployment: Docker Compose (backend + frontend)
 
 ## Local Development
@@ -66,8 +66,8 @@ docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
 
 ## Admin Flow
 1. Upload/delete source PDFs in **Admin → Embeddings and Files**.
-2. Run **Documents Sync** to fetch official ELTE document links from Typesense and download `.pdf/.doc/.docx` files.
-3. Run **Reindex Vector Store** to rebuild FAISS from local `.pdf/.docx` files + normalized news.
+2. Run **Documents Sync** to fetch official ELTE document links from Typesense and download PDF files.
+3. Run **Reindex Vector Store** to rebuild FAISS from local PDFs + normalized news.
 4. Run **News Index → Bootstrap/Sync** manually when you want to refresh news coverage.
 
 Documents sync and reindex are intentionally separate operations.
