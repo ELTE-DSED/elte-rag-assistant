@@ -6,22 +6,26 @@ skinparam classBorderColor #333333
 skinparam stereotypeCBackgroundColor #D3D3D3
 
 package "Preprocessing and Indexing (Manual Jobs)" #E8F4F8 {
-    [Policy Documents\n(.pdf/.doc/.docx)] as docs
-    [Document Sync Job\n(manual trigger)] as doc_sync
-    [Docling DocumentConverter\n(PyPdfium2 backend)] as ingest
+    [Official Document Source\n(Typesense + faculty files)] as doc_source
+    [Document Sync Job\n(download PDF/DOC/DOCX)] as doc_sync
+    [Admin PDF Upload] as admin_upload
+    [Raw Document Corpus\n(data/raw)] as raw_docs
+    [Docling DocumentConverter\n(PDF/DOCX parsing,\nPyPdfium2 for PDF)] as ingest
     [HybridChunker\n(Docling, token-aware)] as chunk
     [Embedding Profile Resolver\n(local_minilm | openai_small | openai_large)] as embed_profile
-    [Embedding Providers\nLocal SentenceTransformers\nor OpenRouter OpenAI embeddings] as embed_provider
+    [Embedding Provider\nLocal SentenceTransformers\nor OpenRouter OpenAI embeddings] as embed_provider
     [Snapshot Builder\n(corpus hash + profiles)] as snapshot_builder
     [Document Snapshot Store\n(FAISS + manifest,\ndata/indexes/{snapshot-id})] as doc_snapshot_store
     [Active Snapshot Map\n(data/runtime/active_indexes.json)] as active_indexes
 
     [ELTE IK News Feed] as news_feed
-    [News Normalizer + Embedder\n(JSON records)] as news_norm
+    [News Normalizer + Embedder\n(JSON records,\nconfigured embedding backend)] as news_norm
     [News Vector Store\n(FAISS, data/news_vector_store)] as news_vector_db
 
-    docs --> doc_sync: explicit sync
-    doc_sync --> ingest: extract text & tables
+    doc_source --> doc_sync: explicit sync
+    doc_sync --> raw_docs: store official files
+    admin_upload --> raw_docs: store uploaded PDFs
+    raw_docs --> ingest: reindex parses PDF/DOCX
     ingest --> chunk: split into chunks\n(max_tokens=256, merge_peers)
     chunk --> embed_profile: resolve runtime embedding profile
     embed_profile --> embed_provider: provider + model
@@ -30,7 +34,7 @@ package "Preprocessing and Indexing (Manual Jobs)" #E8F4F8 {
     snapshot_builder --> active_indexes: update active snapshot pointer
 
     news_feed --> news_norm: fetch + normalize
-    embed_provider --> news_norm: shared embedding backend
+    embed_provider --> news_norm: embedding backend
     news_norm --> news_vector_db: store news embeddings
 }
 
@@ -48,8 +52,8 @@ package "Runtime Pipeline (Query-Response)" #F8E8F4 {
     package "Candidate Retrieval" #F0E0F0 {
         [FAISS Retriever\n(MMR search)] as faiss_ret
         [BM25 Retriever\n(keyword search)] as bm25_ret
-        [Document Fusion\n(RRF)] as rrf_docs
-        [News FAISS Retriever\n(MMR search)] as news_ret
+        [News FAISS Retriever\n(MMR, dimension-checked)] as news_ret
+        [RRF Fusion\n(document + news candidates)] as rrf_docs
     }
 
     [Carry-Over Injector\n(latest assistant cited sources,\nmax 2)] as carry_over
@@ -61,8 +65,8 @@ package "Runtime Pipeline (Query-Response)" #F8E8F4 {
     [LLM Reranker\n(prompt scoring with parse fallback)] as llm_reranker
     [Final Ranked Context] as final_context
     [LLM Generator\n(OpenRouter or Ollama)] as llm
-    [Post-Answer Verification\n(enhanced_v2 only)] as verifier
-    [Structured Output\n(answer, reasoning,\nconfidence, citations)] as response
+    [Post-Answer Verification\n(metadata only, enhanced_v2)] as verifier
+    [Structured Output\n(answer, reasoning,\nconfidence, cited_chunk_ids)] as response
 
     user --> frontend: asks question
     frontend --> backend: send query + history\n+ optional assistant cited_sources
@@ -82,11 +86,11 @@ package "Runtime Pipeline (Query-Response)" #F8E8F4 {
 
     faiss_ret --> rrf_docs: ranked candidates
     bm25_ret --> rrf_docs: ranked candidates
+    news_ret --> rrf_docs: ranked candidates
 
     backend --> carry_over: extract latest assistant citations
     carry_over --> merge_dedup: inject carry-over docs
-    rrf_docs --> merge_dedup: document candidates
-    news_ret --> merge_dedup: news candidates
+    rrf_docs --> merge_dedup: fused candidates
 
     merge_dedup --> pipeline_mode: candidate pool
     pipeline_mode --> diversity_cap: enhanced_v2 path
@@ -101,9 +105,9 @@ package "Runtime Pipeline (Query-Response)" #F8E8F4 {
 
     temporal_ctx --> llm: inject runtime temporal context
     final_context --> llm: context + query + chat history
-    llm --> response: baseline_v1 direct
+    llm --> response: generated structured answer
     llm --> verifier: enhanced_v2 checks
-    verifier --> response: verified or fallback answer
+    verifier --> response: verification_passed\n+ guardrail metadata
     response --> backend: RAGResult
     backend --> frontend: JSON response
     frontend --> user: display answer + sources
@@ -153,7 +157,7 @@ package "Prompt Engineering" #FFF8E8 {
     [Follow-Up Rewrite Prompt] as rewrite_prompt
     [Rerank Prompt\n(score-list JSON)] as rerank_prompt
     [Temporal Prompt Contract\n- current_date\n- weekday\n- current_term\nTZ: Europe/Budapest\nTerm rule: Aug 1-Jan 20 => Autumn/Fall/1st,\nelse Spring/2nd] as temporal_contract
-    [Structured Output Schema\n(RAGOutput: reasoning,\nanswer, confidence,\ncited_sources)] as schema
+    [Structured Output Schema\n(RAGOutput: reasoning,\nanswer, confidence,\ncited_chunk_ids)] as schema
 
     sys_prompt --> llm
     few_shot --> llm
@@ -167,8 +171,9 @@ doc_snapshot_store -.-> faiss_ret: active FAISS snapshot
 news_vector_db -.-> news_ret: shared index
 
 note right of backend
-    Backend is stateless per request.
+    Backend keeps retrieval resources in memory.
     Chat history is provided by frontend.
+    Usage telemetry is persisted.
     No full-history vector retrieval.
     Health check endpoint: /health
     Default local URL: http://localhost:8001

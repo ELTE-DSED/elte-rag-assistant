@@ -6,22 +6,26 @@ skinparam classBorderColor #333333
 skinparam stereotypeCBackgroundColor #D3D3D3
 
 package "Preprocessing and Indexing (Manual Jobs)" #E8F4F8 {
-    [Policy Documents\n(.pdf/.doc/.docx)] as docs
-    [Document Sync Job\n(manual trigger)] as doc_sync
-    [Docling DocumentConverter\n(PyPdfium2 backend)] as ingest
+    [Official Document Source\n(Typesense + faculty files)] as doc_source
+    [Document Sync Job\n(download PDF/DOC/DOCX)] as doc_sync
+    [Admin PDF Upload] as admin_upload
+    [Raw Document Corpus\n(data/raw)] as raw_docs
+    [Docling DocumentConverter\n(PDF/DOCX parsing,\nPyPdfium2 for PDF)] as ingest
     [HybridChunker\n(Docling, token-aware)] as chunk
     [Embedding Profile Resolver\n(local_minilm | openai_small | openai_large)] as embed_profile
-    [Embedding Providers\nLocal SentenceTransformers\nor OpenRouter OpenAI embeddings] as embed_provider
+    [Embedding Provider\nLocal SentenceTransformers\nor OpenRouter OpenAI embeddings] as embed_provider
     [Snapshot Builder\n(corpus hash + profiles)] as snapshot_builder
     [Document Snapshot Store\n(FAISS + manifest,\ndata/indexes/{snapshot-id})] as doc_snapshot_store
     [Active Snapshot Map\n(data/runtime/active_indexes.json)] as active_indexes
 
     [ELTE IK News Feed] as news_feed
-    [News Normalizer + Embedder\n(JSON records)] as news_norm
+    [News Normalizer + Embedder\n(JSON records,\nconfigured embedding backend)] as news_norm
     [News Vector Store\n(FAISS, data/news_vector_store)] as news_vector_db
 
-    docs --> doc_sync: explicit sync
-    doc_sync --> ingest: extract text & tables
+    doc_source --> doc_sync: explicit sync
+    doc_sync --> raw_docs: store official files
+    admin_upload --> raw_docs: store uploaded PDFs
+    raw_docs --> ingest: reindex parses PDF/DOCX
     ingest --> chunk: split into chunks\n(max_tokens=256, merge_peers)
     chunk --> embed_profile: resolve runtime embedding profile
     embed_profile --> embed_provider: provider + model
@@ -30,7 +34,7 @@ package "Preprocessing and Indexing (Manual Jobs)" #E8F4F8 {
     snapshot_builder --> active_indexes: update active snapshot pointer
 
     news_feed --> news_norm: fetch + normalize
-    embed_provider --> news_norm: shared embedding backend
+    embed_provider --> news_norm: embedding backend
     news_norm --> news_vector_db: store news embeddings
 }
 

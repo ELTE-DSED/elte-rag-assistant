@@ -17,8 +17,8 @@ package "Runtime Query Resolution" #F8E8F4 {
     package "Candidate Retrieval" #F0E0F0 {
         [FAISS Retriever\n(MMR)] as faiss_ret
         [BM25 Retriever] as bm25_ret
-        [RRF Fusion] as rrf_docs
-        [News FAISS Retriever\n(MMR)] as news_ret
+        [News FAISS Retriever\n(MMR, dimension-checked)] as news_ret
+        [RRF Fusion\n(document + news candidates)] as rrf_docs
     }
 
     [Carry-Over Injector\n(max 2 cited sources)] as carry_over
@@ -45,11 +45,11 @@ package "Runtime Query Resolution" #F8E8F4 {
 
     faiss_ret --> rrf_docs
     bm25_ret --> rrf_docs
+    news_ret --> rrf_docs
 
     backend --> carry_over
     carry_over --> merge_dedup
     rrf_docs --> merge_dedup
-    news_ret --> merge_dedup
 
     merge_dedup --> pipeline_mode
     pipeline_mode --> diversity_cap: enhanced_v2

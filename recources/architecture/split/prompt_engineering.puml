@@ -11,7 +11,7 @@ package "Prompt Engineering" #FFF8E8 {
     [Follow-Up Rewrite Prompt] as rewrite_prompt
     [Rerank Prompt\n(score-list JSON)] as rerank_prompt
     [Temporal Prompt Contract\n- current_date\n- weekday\n- current_term\nTZ: Europe/Budapest\nTerm rule: Aug 1-Jan 20 => Autumn/Fall/1st,\nelse Spring/2nd] as temporal_contract
-    [Structured Output Schema\n(RAGOutput: reasoning,\nanswer, confidence,\ncited_sources)] as schema
+    [Structured Output Schema\n(RAGOutput: reasoning,\nanswer, confidence,\ncited_chunk_ids)] as schema
 }
 
 [Runtime Query Rewriter] as rewriter
